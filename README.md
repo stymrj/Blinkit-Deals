@@ -1,87 +1,54 @@
-# ⚡ PriceDrop Hunter for Blinkit
+# PriceDrop Hunter for Blinkit
 
-A client-side bookmarklet and userscript for **Blinkit**. It sweeps dozens of keywords and collections in the background, finds the steepest discounts, tracks price drops between scans, and helps you build a smart basket. No manual scrolling. Works on PC, Mac, Android and iOS.
+Sweeps Blinkit through keyword searches and collection listings, ranks products by real savings, and tracks price changes between scans. It runs in your own browser as a bookmarklet or userscript. Nothing is uploaded and there is no account.
 
-> Runs entirely in your browser using your own Blinkit session and delivery address. Nothing is sent to any third party.
+**Live page:** https://stymrj.github.io/Blinkit-Deals/
 
----
+## Features
 
-## ✨ Features
+- Ranks by percent off and rupees saved together
+- Labels products that are new or cheaper than your last scan
+- Filters: search, category, brand, maximum price, minimum discount, stock, saved items
+- Shopping list with quantities, total and total savings
+- CSV export and copy-to-share text
+- Grid and list views, light and dark themes, keyboard shortcuts
+- Settings, saved items and price history stay in your browser
 
-- 🎯 **Best-Deal Score**: Ranks by discount **and** rupees saved, not just percent.
-- ⚡ **Parallel Scanning**: 5 workers, retries with backoff, up to 5 pages per keyword, stop any time.
-- 🔎 **Keyword + Collection Scan**: 45+ keywords across 8 groups, plus direct collection listings.
-- 📉 **Price-Drop Tracking**: `NEW` and `PRICE ↓` badges against your previous scan.
-- 🧰 **Smart Filters**: Search, category, brand, max price, min discount, in-stock only, favourites, new-only.
-- 🛒 **Basket**: Quantities, running total, total savings, copy it or open every product link.
-- ⬇️ **Export & Share**: CSV download or copy the top 20 deals as text for WhatsApp.
-- 🌗 **Modern UI**: Grid or list, dark mode, mobile-friendly, style-isolated with Shadow DOM.
-- 💾 **Remembers You**: Filters, favourites, theme and price history persist locally.
-- 📍 **Auto Location**: Reads your delivery coordinates from the page, or enter lat/lon manually.
+## Install
 
----
+**Bookmarklet (desktop).** Run `node build.js`, open `index.html`, and drag the button to your bookmarks bar. Open blinkit.com and click the bookmark.
 
-## 🚀 Installation & Usage
+**Bookmarklet (mobile).** Copy the code from the page, create a bookmark, and paste the code as its address. Run it from the address bar on blinkit.com.
 
-### 💻 Desktop
-1. Run `node build.js`, then open `index.html` (or `python3 -m http.server 8766` and visit `http://localhost:8766`).
-2. Show your bookmarks bar (`Ctrl+Shift+B` / `Cmd+Shift+B`).
-3. Drag the **⚡ PriceDrop Hunter** button onto the bar.
-4. Open [blinkit.com](https://blinkit.com), set your delivery address, click the bookmark, press **Scan deals**.
+**Userscript.** Install `dist/blinkit-deals.user.js` in Tampermonkey or Violentmonkey. A small Deals button appears on every blinkit.com page.
 
-**Userscript:** install `dist/blinkit-deals.user.js` in Tampermonkey or Violentmonkey. A **⚡ Deals** button appears on every blinkit.com page.
+**Demo.** Use "Try the demo" on the install page to explore the interface with sample data.
 
-### 📱 Mobile
-1. Open the installer page and tap **Copy for mobile**.
-2. Create a bookmark, edit it, and paste the script as the URL.
-3. On blinkit.com, type the bookmark name in the address bar and pick it.
+## Keyboard shortcuts
 
-### 🎬 Demo
-Click **▶ Try live demo** on the installer page to try the full UI with synthetic data on any site.
+`/` search, `S` scan or stop, `Esc` close.
 
----
+## How it gets data
 
-## 🎮 Controls
+Uses Blinkit's own web endpoints (`/v1/layout/search` and `/v1/layout/listing_widgets`) from your logged-in session. Latitude and longitude are read from the page, or entered in the sidebar.
 
-| Control | Description |
-| :--- | :--- |
-| **Category chips** | Choose which keyword groups and collections to scan. |
-| **Latitude / Longitude** | Auto-detected from the page; override if needed. |
-| **Pages per category** | Scan depth (1 to 5). Results are sorted by discount, so 2 to 3 is usually enough. |
-| **⚡ Scan deals / ■ Stop** | Start or stop the scan. |
-| **Min discount / Max price** | Live filters. |
-| **Sort** | Best deal, highest discount, biggest saving ₹, price, name. |
-| **♡ / ✕ / + List** | Favourite, hide, or add to basket. |
-| **Shortcuts** | `/` search · `S` scan or stop · `Esc` close |
+## Limitations
 
----
+- Prices and stock depend on your local store.
+- The three collection groups use best-effort request bodies; the keyword groups are the primary path.
+- The endpoints are undocumented and can change.
 
-## 🧱 Project Structure
+## Project layout
 
 ```
-Blinkit-Deals/
-├── src/
-│   ├── deals.js          # The whole app (single IIFE, zero dependencies)
-│   └── index.tpl.html    # Installer page template
-├── dist/                 # Generated by build.js
-├── build.js              # Minify and generate bookmarklet, userscript, installer
-├── index.html            # Generated installer page
-└── README.md
+src/deals.js         the app (one file, no dependencies)
+src/index.tpl.html   install page template
+build.js             builds dist/ and index.html
+favicon.svg
 ```
 
----
-
-## 🛡️ Technical & Privacy Details
-
-- **Data source:** Blinkit's own web endpoints (`/v1/layout/search` and `/v1/layout/listing_widgets`), called from your logged-in session.
-- **Privacy:** No analytics, no remote calls other than Blinkit. Favourites and price history live in your browser's `localStorage`.
-- **Resilient parsing:** The parser walks the whole response instead of fixed paths.
-
-### ⚠️ Known limitations
-- Blinkit's endpoints are undocumented and can change; prices and stock depend on your local dark store.
-- The three "collection" groups use best-effort request bodies and may return nothing; the keyword groups are the primary path.
-- Not yet verified against live Blinkit data in every region. Please open an issue with what you see.
+Run `node build.js` after any change.
 
 ---
 
-<p align="center">Made with ❤️ by <a href="https://www.linkedin.com/in/satyamraj1"><b>Satyam Raj</b></a></p>
+Made with ♥ by [Satyam Raj](https://www.linkedin.com/in/satyamraj1)

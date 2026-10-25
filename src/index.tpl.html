@@ -6,207 +6,173 @@
 <title>PriceDrop Hunter for Blinkit</title>
 <meta name="description" content="Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans.">
 <meta name="theme-color" content="#0c831f">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⚡%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
-:root{--bg:#f6f8fd;--sf:#fff;--sf2:#eef2fb;--tx:#12162b;--mt:#5f6888;--bd:#e0e6f4;--pr:#0c831f;--pr2:#096b19;--ac:#f8cb46;--ok:#0f9d58;--hot:#e5484d;--sh:0 1px 2px rgba(20,30,70,.06),0 12px 32px rgba(20,30,70,.08);--r:18px}
-:root[data-theme=dark]{--bg:#0b0f1d;--sf:#141a2e;--sf2:#1c2340;--tx:#eef1fb;--mt:#8f98bd;--bd:#27304f;--pr:#34c759;--sh:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4)}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0f1d;--sf:#141a2e;--sf2:#1c2340;--tx:#eef1fb;--mt:#8f98bd;--bd:#27304f;--pr:#34c759;--sh:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4)}}
+:root{--bg:#fafaf8;--sf:#fff;--sf2:#f2f2ee;--tx:#16171b;--mt:#686c77;--bd:#e5e5e0;--pr:#0c831f;--pr2:#096b19}
+:root[data-theme=dark]{--bg:#0f1013;--sf:#16181d;--sf2:#1d2027;--tx:#ececef;--mt:#8b8f9b;--bd:#272a32;--pr:#34c759;--pr2:#34c759}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1013;--sf:#16181d;--sf2:#1d2027;--tx:#ececef;--mt:#8b8f9b;--bd:#272a32;--pr:#34c759;--pr2:#34c759}}
 *{box-sizing:border-box;margin:0}
-html{scroll-behavior:smooth;scroll-padding-top:76px}
-body{background:var(--bg);color:var(--tx);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{background:var(--bg);color:var(--tx);font:16px/1.6 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}
-.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
-/* nav */
-nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}
-nav .wrap{display:flex;align-items:center;gap:20px;height:64px}
-.brand{font-weight:800;font-size:18px;letter-spacing:-.4px;text-decoration:none;display:flex;gap:8px;align-items:center}
-.brand i{font-style:normal;background:var(--ac);color:#111;border-radius:9px;padding:1px 8px;font-size:12px}
-.links{display:flex;gap:22px;margin-left:auto}
-.links a{text-decoration:none;color:var(--mt);font-weight:600;font-size:14px}.links a:hover{color:var(--tx)}
-.tg{width:38px;height:38px;border-radius:11px;border:1px solid var(--bd);background:var(--sf);cursor:pointer;font-size:16px;color:var(--tx)}
-/* hero */
-.hero{padding:64px 0 40px;background:radial-gradient(1000px 420px at 85% -10%,color-mix(in srgb,var(--pr) 22%,transparent),transparent),radial-gradient(700px 360px at 0% 0%,color-mix(in srgb,var(--ac) 22%,transparent),transparent)}
-.hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
-.pill{display:inline-flex;gap:8px;align-items:center;background:var(--sf);border:1px solid var(--bd);border-radius:99px;padding:5px 14px;font-size:13px;font-weight:700;color:var(--mt)}
-.pill b{color:var(--pr)}
-h1{font-size:clamp(34px,5.4vw,60px);line-height:1.04;letter-spacing:-2px;margin:18px 0 16px}
-h1 em{font-style:normal;background:linear-gradient(90deg,var(--pr),var(--pr2));-webkit-background-clip:text;background-clip:text;color:transparent}
-.lead{font-size:18px;color:var(--mt);max-width:540px}
-.cta{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 14px;align-items:center}
-.btn{display:inline-flex;align-items:center;gap:8px;border-radius:14px;padding:14px 22px;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--sf);color:var(--tx);text-decoration:none;transition:transform .15s,box-shadow .15s}
-.btn:hover{transform:translateY(-2px);box-shadow:var(--sh)}
-.btn.pri{background:var(--ac);color:#111;border-color:transparent;cursor:grab;box-shadow:0 10px 26px color-mix(in srgb,var(--ac) 55%,transparent)}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+nav{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--bd)}
+nav .wrap{display:flex;align-items:center;height:60px;gap:28px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.2px;text-decoration:none}
+.brand svg{width:22px;height:22px;display:block}
+.links{margin-left:auto;display:flex;gap:24px;align-items:center}
+.links a,.links button{color:var(--mt);font-weight:500;font-size:14px;font-family:inherit;text-decoration:none;background:none;border:0;cursor:pointer;padding:0}
+.links a:hover,.links button:hover{color:var(--tx)}
+.hero{padding:88px 0 64px}
+.kicker{color:var(--mt);font-size:14px;font-weight:500;margin-bottom:20px}
+h1{font-size:clamp(38px,6.4vw,68px);line-height:1.02;letter-spacing:-.045em;font-weight:700;max-width:14ch}
+.lead{font-size:19px;color:var(--mt);max-width:34em;margin:24px 0 36px}
+.cta{display:flex;gap:14px 20px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;height:48px;padding:0 24px;border-radius:10px;font-weight:600;font-size:15px;font-family:inherit;text-decoration:none;cursor:pointer;border:1px solid transparent}
+.btn.pri{background:var(--pr);color:#fff;cursor:grab}.btn.pri:hover{background:var(--pr2);filter:brightness(.94)}
 .btn.pri:active{cursor:grabbing}
-.hint{font-size:13px;color:var(--mt)}.hint b{color:var(--tx)}
-.trust{display:flex;gap:18px;flex-wrap:wrap;margin-top:22px;font-size:13px;color:var(--mt);font-weight:600}
-/* preview mock */
-.mock{background:var(--sf);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);overflow:hidden;transform:rotate(1.2deg)}
-.mock .bar{display:flex;gap:6px;align-items:center;padding:10px 14px;background:var(--sf2);border-bottom:1px solid var(--bd)}
-.mock .bar i{width:10px;height:10px;border-radius:50%;background:#ff5f57}.mock .bar i:nth-child(2){background:#febc2e}.mock .bar i:nth-child(3){background:#28c840}
-.mock .bar span{margin-left:10px;font-size:12px;color:var(--mt);background:var(--sf);border-radius:8px;padding:2px 10px;flex:1}
-.mock .hd{background:var(--pr);color:#fff;padding:10px 14px;font-weight:800;display:flex;gap:8px;align-items:center;font-size:14px}
-.mock .hd i{background:var(--ac);color:#111;border-radius:6px;padding:0 6px;font-size:10px;font-style:normal}
-.mock .st{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 12px 4px}
-.mock .st div{background:var(--sf2);border-radius:10px;padding:8px 10px;font-size:11px;color:var(--mt)}.mock .st b{display:block;font-size:17px;color:var(--tx)}
-.mock .gd{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 12px 14px}
-.mc{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;font-size:11px}
-.mc .im{aspect-ratio:1;display:grid;place-items:center;font-size:34px;position:relative}
-.mc .im u{position:absolute;top:6px;left:6px;text-decoration:none;background:var(--ok);color:#fff;font-weight:800;font-size:10px;border-radius:6px;padding:1px 6px}
-.mc .im u.h{background:var(--hot)}
-.mc div.t{padding:6px 8px 8px;font-weight:600;line-height:1.3}.mc s{color:var(--mt);font-weight:400;margin-left:4px}.mc .sv{color:var(--ok);font-weight:700}
-/* sections */
-section{padding:72px 0}
-.eyebrow{font-size:13px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--pr)}
-h2{font-size:clamp(26px,3.6vw,38px);letter-spacing:-1px;line-height:1.15;margin:8px 0 12px}
-.sub{color:var(--mt);max-width:620px;font-size:17px}
-.center{text-align:center}.center .sub{margin:0 auto}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:-8px}
-.stats div{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px;text-align:center;box-shadow:var(--sh)}
-.stats b{display:block;font-size:30px;letter-spacing:-1px;color:var(--pr)}.stats span{color:var(--mt);font-size:14px;font-weight:600}
-.feat{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:36px}
-.fc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:22px;transition:transform .2s,box-shadow .2s}
-.fc:hover{transform:translateY(-4px);box-shadow:var(--sh)}
-.fc .ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--pr) 14%,var(--sf2));margin-bottom:14px}
-.fc h3{font-size:17px;margin-bottom:4px;letter-spacing:-.2px}.fc p{color:var(--mt);font-size:14.5px}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px;counter-reset:s}
-.sp{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:26px;position:relative;counter-increment:s}
-.sp:before{content:counter(s);position:absolute;top:-16px;left:22px;width:34px;height:34px;border-radius:50%;background:var(--pr);color:#fff;font-weight:800;display:grid;place-items:center;box-shadow:var(--sh)}
-.sp h3{margin:6px 0 4px;font-size:18px}.sp p{color:var(--mt);font-size:15px}
-/* install */
-.tabs{display:inline-flex;background:var(--sf2);border-radius:14px;padding:5px;gap:4px;margin:28px 0 18px;flex-wrap:wrap}
-.tabs button{border:0;background:none;color:var(--mt);font-weight:700;font-size:14px;font-family:inherit;padding:9px 18px;border-radius:10px;cursor:pointer}
-.tabs button.on{background:var(--sf);color:var(--tx);box-shadow:0 1px 4px rgba(0,0,0,.12)}
-.panel{display:none;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:24px 28px}
-.panel.on{display:block}
-.panel ol{padding-left:22px}.panel li{margin:9px 0}
-kbd,code{font:13px ui-monospace,Menlo,monospace;background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:1px 6px}
-.codecard{margin-top:26px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:22px}
-.codecard .hh{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.codecard h3{font-size:18px}
-textarea{width:100%;height:100px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--mt);padding:12px;font:12px ui-monospace,Menlo,monospace;resize:vertical}
-/* faq */
-.faq{max-width:780px;margin:32px auto 0;display:grid;gap:12px}
-details{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:4px 20px}
-summary{cursor:pointer;font-weight:700;padding:14px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
-summary::after{content:"+";color:var(--pr);font-size:22px;line-height:1}
-details[open] summary::after{content:"–"}
-details p{color:var(--mt);padding:0 0 16px;font-size:15px}
-/* footer */
-footer{border-top:1px solid var(--bd);padding:34px 0 46px;text-align:center;color:var(--mt)}
-footer a{color:var(--pr);font-weight:700;text-decoration:none}footer a:hover{text-decoration:underline}
-.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,90px);background:#12162b;color:#fff;padding:11px 18px;border-radius:12px;font-weight:600;opacity:0;transition:.25s;z-index:50}
+.link{font-weight:600;color:var(--tx);text-decoration:none;border-bottom:1px solid var(--bd);padding-bottom:1px;font-size:15px;background:none;border-top:0;border-left:0;border-right:0;cursor:pointer;font-family:inherit}
+.link:hover{border-color:var(--tx)}
+.hint{margin-top:18px;font-size:14px;color:var(--mt)}
+.shot{margin-top:64px;border:1px solid var(--bd);border-radius:12px;background:var(--sf);overflow:hidden}
+.shot .top{display:flex;align-items:center;gap:10px;padding:0 18px;height:44px;border-bottom:1px solid var(--bd);font-size:13px;font-weight:600}
+.shot .top i{width:9px;height:9px;background:var(--pr);border-radius:2px}
+.shot .top span{color:var(--mt);font-weight:500}
+.shot .sum{display:flex;gap:24px;padding:16px 18px 6px;font-size:13px;color:var(--mt);flex-wrap:wrap}.shot .sum b{color:var(--tx);margin-right:4px}
+.shot .gd{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:12px 18px 20px}
+.mc{border:1px solid var(--bd);border-radius:8px;overflow:hidden;font-size:12.5px}
+.mc .im{aspect-ratio:1.25;display:grid;place-items:center;font:700 44px Georgia,serif}
+.mc .t{padding:10px 12px 12px;line-height:1.35}.mc .t b{font-size:16px;margin-right:6px}.mc .t s{color:var(--mt)}.mc .t em{font-style:normal;color:#17803d;font-weight:600;display:block;margin-top:2px}
+:root[data-theme=dark] .mc .t em{color:#4ade80}
+section{padding:72px 0;border-top:1px solid var(--bd)}
+h2{font-size:clamp(26px,3.4vw,36px);letter-spacing:-.03em;line-height:1.15;font-weight:700;margin-bottom:12px}
+.sub{color:var(--mt);max-width:34em;font-size:17px}
+.list{display:grid;grid-template-columns:repeat(2,1fr);gap:0 56px;margin-top:40px}
+.list div{padding:20px 0;border-top:1px solid var(--bd)}
+.list h3{font-size:16px;font-weight:600;margin-bottom:4px}.list p{color:var(--mt);font-size:15px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:40px}
+.steps b{display:block;font-size:15px;color:var(--mt);font-weight:500;margin-bottom:10px}
+.steps h3{font-size:18px;margin-bottom:6px}.steps p{color:var(--mt);font-size:15px}
+.tabs{display:flex;gap:28px;margin:36px 0 24px;border-bottom:1px solid var(--bd)}
+.tabs button{background:none;border:0;font-weight:500;font-size:15px;font-family:inherit;color:var(--mt);padding:0 0 12px;margin-bottom:-1px;border-bottom:2px solid transparent;cursor:pointer}
+.tabs button.on{color:var(--tx);border-color:var(--pr)}
+.panel{display:none;max-width:40em}.panel.on{display:block}
+.panel ol{padding-left:20px}.panel li{margin:10px 0}
+kbd,code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--sf2);border:1px solid var(--bd);border-radius:5px;padding:1px 6px}
+.code{margin-top:40px;border:1px solid var(--bd);border-radius:10px;background:var(--sf)}
+.code summary{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;cursor:pointer;font-weight:600;list-style:none}
+.code summary::-webkit-details-marker{display:none}
+.code .in{padding:0 18px 18px}
+.small{height:34px;padding:0 14px;font-size:13px;background:var(--sf);color:var(--tx);border-color:var(--bd);border-radius:8px}.small:hover{background:var(--sf2)}
+textarea{width:100%;height:96px;margin-top:12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--mt);padding:10px;font:11.5px ui-monospace,Menlo,monospace;resize:vertical}
+.faq{margin-top:32px;max-width:44em}
+.faq details{border-top:1px solid var(--bd)}.faq details:last-child{border-bottom:1px solid var(--bd)}
+.faq summary{cursor:pointer;font-weight:600;padding:18px 0;list-style:none;display:flex;justify-content:space-between;gap:16px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--mt);font-weight:400;font-size:20px;line-height:1.2}
+.faq details[open] summary::after{content:"\2212"}
+.faq p{color:var(--mt);padding:0 0 20px;font-size:15px}
+footer{border-top:1px solid var(--bd);padding:32px 0 48px;color:var(--mt);font-size:14px}
+footer a{color:var(--tx);font-weight:600;text-decoration:none;border-bottom:1px solid var(--bd)}footer a:hover{border-color:var(--tx)}
+footer .h{color:var(--pr)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,80px);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:500;font-size:14px;opacity:0;transition:.2s;z-index:50}
 .toast.on{transform:translate(-50%,0);opacity:1}
-@media(max-width:860px){
- .hero .wrap{grid-template-columns:1fr;gap:34px}.mock{transform:none;max-width:480px}
- .stats{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:1fr;gap:28px}.links{display:none}.tg{margin-left:auto}
- section{padding:52px 0}.panel{padding:20px}
+@media(max-width:760px){
+ .hero{padding:56px 0 40px}.links a{display:none}.list{grid-template-columns:1fr}.steps{grid-template-columns:1fr;gap:28px}
+ .shot .gd{grid-template-columns:repeat(2,1fr)}section{padding:52px 0}.shot{margin-top:44px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 <nav><div class="wrap">
-  <a class="brand" href="#top">⚡ PriceDrop <i>HUNTER</i></a>
-  <div class="links"><a href="#features">Features</a><a href="#how">How it works</a><a href="#install">Install</a><a href="#faq">FAQ</a></div>
-  <button class="tg" id="theme" aria-label="Toggle theme">☾</button>
+  <a class="brand" href="#top"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--pr)"/><path d="M16 7v14M9.5 15l6.5 7 6.5-7" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 26h14" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".65"/></svg>PriceDrop Hunter</a>
+  <div class="links"><a href="#features">Features</a><a href="#install">Install</a><a href="#faq">FAQ</a><button id="theme" type="button">Dark</button></div>
 </div></nav>
 
 <header class="hero" id="top"><div class="wrap">
-  <div>
-    <span class="pill">⚡ Built for <b>Blinkit</b></span>
-    <h1>Catch every <em>price drop</em> on Blinkit</h1>
-    <p class="lead">Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans. Runs in your own browser, free and private.</p>
-    <div class="cta">
-      <a class="btn pri" id="bm" href="__BOOKMARKLET__" title="Drag me to your bookmarks bar">⚡ PriceDrop Hunter</a>
-      <button class="btn" id="demo">▶ Try live demo</button>
-      <button class="btn" id="copy">⧉ Copy for mobile</button>
-    </div>
-    <p class="hint">👆 <b>Drag the yellow button</b> to your bookmarks bar, then open blinkit.com and click it.</p>
-    <div class="trust"><span>🔒 Nothing leaves your browser</span><span>🆓 Free forever</span><span>📱 Desktop + mobile</span></div>
+  <p class="kicker">For Blinkit</p>
+  <h1>Find the real discounts.</h1>
+  <p class="lead">Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans. It runs in your own browser, so nothing is uploaded and there is nothing to sign up for.</p>
+  <div class="cta">
+    <a class="btn pri" id="bm" href="__BOOKMARKLET__" title="Drag me to your bookmarks bar">PriceDrop Hunter</a>
+    <button class="link" id="demo" type="button">Try the demo</button>
+    <button class="link" id="copy" type="button">Copy for mobile</button>
   </div>
-  <div class="mock" aria-hidden="true">
-    <div class="bar"><i></i><i></i><i></i><span>blinkit.com</span></div>
-    <div class="hd">PriceDrop <i>HUNTER</i></div>
-    <div class="st"><div><b>148</b>deals</div><div><b>46%</b>avg off</div><div><b>₹610</b>top saving</div></div>
+  <p class="hint">Drag the button to your bookmarks bar, open blinkit.com, then click it.</p>
+  <div class="shot" aria-hidden="true">
+    <div class="top"><i></i>PriceDrop Hunter <span>Blinkit</span></div>
+    <div class="sum"><span><b>148</b>products</span><span><b>46%</b>average discount</span><span><b>₹610</b>biggest saving</span></div>
     <div class="gd">
-      <div class="mc"><div class="im" style="background:linear-gradient(135deg,#ffe8c2,#ffb86b)"><u class="h">72% OFF</u>🍿</div><div class="t">Classic Chips 250g<br><b>₹59</b><s>₹210</s><div class="sv">Save ₹151</div></div></div>
-      <div class="mc"><div class="im" style="background:linear-gradient(135deg,#dff3ff,#8ac7ff)"><u>58% OFF</u>🥛</div><div class="t">Fresh Milk Combo<br><b>₹124</b><s>₹295</s><div class="sv">Save ₹171</div></div></div>
-      <div class="mc"><div class="im" style="background:linear-gradient(135deg,#e2f7df,#8fd88a)"><u class="h">66% OFF</u>🌾</div><div class="t">Premium Atta 5kg<br><b>₹189</b><s>₹560</s><div class="sv">Save ₹371</div></div></div>
+      <div class="mc"><div class="im" style="background:#f4e6d3;color:#8a6232">A</div><div class="t">Classic Chips 250g<br><b>₹59</b><s>₹210</s><em>72% off</em></div></div>
+      <div class="mc"><div class="im" style="background:#dbe8f4;color:#386592">F</div><div class="t">Fresh Milk Combo<br><b>₹124</b><s>₹295</s><em>58% off</em></div></div>
+      <div class="mc"><div class="im" style="background:#dcebd9;color:#3f7a37">P</div><div class="t">Premium Atta 5kg<br><b>₹189</b><s>₹560</s><em>66% off</em></div></div>
+      <div class="mc"><div class="im" style="background:#efdbe4;color:#8f3b60">H</div><div class="t">Herbal Shampoo<br><b>₹139</b><s>₹320</s><em>57% off</em></div></div>
     </div>
   </div>
 </div></header>
 
-<div class="wrap"><div class="stats">
-  <div><b>45+</b><span>keywords & collections</span></div>
-  <div><b>5×</b><span>parallel scanning</span></div>
-  <div><b>0</b><span>bytes sent to us</span></div>
-  <div><b>₹0</b><span>free forever</span></div>
-</div></div>
-
 <section id="features"><div class="wrap">
-  <div class="center"><span class="eyebrow">Features</span><h2>Everything you need to shop smarter</h2><p class="sub">Not just a list of discounts. A full deal-hunting workspace that lives in your browser.</p></div>
-  <div class="feat">
-    <div class="fc"><div class="ic">🎯</div><h3>Best-deal score</h3><p>Ranks by percent off <b>and</b> rupees saved, so a ₹300 saving beats a ₹3 one.</p></div>
-    <div class="fc"><div class="ic">📉</div><h3>Price-drop tracking</h3><p>NEW and PRICE ↓ badges compare every scan with your previous one.</p></div>
-    <div class="fc"><div class="ic">⚡</div><h3>Parallel scanning</h3><p>5 workers, smart retries, rate-limit back-off. Stop any time.</p></div>
-    <div class="fc"><div class="ic">🧰</div><h3>Powerful filters</h3><p>Search, category, brand, max price, min discount, in-stock, favourites.</p></div>
-    <div class="fc"><div class="ic">🛒</div><h3>Smart basket</h3><p>Quantities, total, total savings. Copy it or open every item at once.</p></div>
-    <div class="fc"><div class="ic">⬇️</div><h3>Export & share</h3><p>Download CSV or copy the top 20 deals, ready for WhatsApp.</p></div>
-    <div class="fc"><div class="ic">🌗</div><h3>Beautiful UI</h3><p>Grid or list, dark mode, mobile friendly, shortcuts for power users.</p></div>
-    <div class="fc"><div class="ic">🔒</div><h3>Private by design</h3><p>Uses your own session. No servers, no tracking, no accounts.</p></div>
+  <h2>What it does</h2>
+  <p class="sub">A small workspace for finding good prices, kept simple.</p>
+  <div class="list">
+    <div><h3>Ranks by real savings</h3><p>Sorts by percent off and rupees saved together, so a ₹300 saving outranks a ₹3 one.</p></div>
+    <div><h3>Tracks price drops</h3><p>Remembers each scan and labels products that are new or cheaper than last time.</p></div>
+    <div><h3>Scans in parallel</h3><p>Several requests at once, with retries and automatic back-off. Stop whenever you like.</p></div>
+    <div><h3>Filters that matter</h3><p>Search, category, brand, maximum price, minimum discount, stock and saved items.</p></div>
+    <div><h3>A shopping list</h3><p>Quantities, total and total savings. Copy it, or open every product at once.</p></div>
+    <div><h3>Export and share</h3><p>Download a CSV, or copy the top deals as text for a chat message.</p></div>
+    <div><h3>Light and dark</h3><p>Grid or list, works on phones, with keyboard shortcuts on desktop.</p></div>
+    <div><h3>Private by design</h3><p>Uses your own session. No servers, no analytics, no accounts.</p></div>
   </div>
 </div></section>
 
-<section id="how" style="background:var(--sf2)"><div class="wrap">
-  <div class="center"><span class="eyebrow">How it works</span><h2>From install to savings in 60 seconds</h2></div>
+<section id="how"><div class="wrap">
+  <h2>How it works</h2>
   <div class="steps">
-    <div class="sp"><h3>Add the bookmark</h3><p>Drag the yellow button to your bookmarks bar (or install the userscript).</p></div>
-    <div class="sp"><h3>Open blinkit.com</h3><p>Make sure your delivery address is set. Then click the bookmark. PriceDrop Hunter opens full screen.</p></div>
-    <div class="sp"><h3>Scan & save</h3><p>Pick categories, hit <b>Scan deals</b>, sort by best deal and add items to your basket.</p></div>
+    <div><b>01</b><h3>Add the bookmark</h3><p>Drag the button above to your bookmarks bar, or install the userscript.</p></div>
+    <div><b>02</b><h3>Open blinkit.com</h3><p>Make sure your delivery address is set. Then click the bookmark.</p></div>
+    <div><b>03</b><h3>Scan and save</h3><p>Choose categories, start a scan, sort by best deal and build your list.</p></div>
   </div>
 </div></section>
 
 <section id="install"><div class="wrap">
-  <div class="center"><span class="eyebrow">Install</span><h2>Pick your setup</h2><p class="sub">Works on every modern browser.</p></div>
-  <div class="center"><div class="tabs" role="tablist">
-    <button class="on" data-t="p1">💻 Desktop</button><button data-t="p2">📱 Mobile</button><button data-t="p3">🧩 Userscript</button>
-  </div></div>
+  <h2>Install</h2>
+  <p class="sub">Works in any modern browser.</p>
+  <div class="tabs" role="tablist"><button class="on" data-t="p1">Desktop</button><button data-t="p2">Mobile</button><button data-t="p3">Userscript</button></div>
   <div class="panel on" id="p1"><ol>
-    <li>Show your bookmarks bar: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (Windows/Linux) or <kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (Mac).</li>
-    <li>Drag the yellow <b>⚡ PriceDrop Hunter</b> button above onto the bar.</li>
-    <li>Open <code>blinkit.com</code>, set your delivery address, and click the bookmark.</li>
+    <li>Show the bookmarks bar: <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>B</kbd> on Windows and Linux, <kbd>⌘</kbd> <kbd>Shift</kbd> <kbd>B</kbd> on Mac.</li>
+    <li>Drag the <b>PriceDrop Hunter</b> button onto the bar.</li>
+    <li>Open <code>blinkit.com</code>, set your delivery address, then click the bookmark.</li>
     <li>Press <b>Scan deals</b>.</li>
   </ol></div>
   <div class="panel" id="p2"><ol>
-    <li>Tap <b>Copy for mobile</b> (or <b>Copy code</b> below).</li>
-    <li>Bookmark any page in Chrome or Safari, then <b>edit</b> the bookmark: name it <code>⚡ PriceDrop Hunter</code> and paste the code as the URL.</li>
-    <li>Open <code>blinkit.com</code>, set your delivery address.</li>
-    <li>Type <code>PriceDrop</code> in the address bar and tap the bookmark suggestion.</li>
+    <li>Tap <b>Copy for mobile</b> at the top of this page.</li>
+    <li>Bookmark any page, edit the bookmark, name it <code>PriceDrop Hunter</code> and paste the code as the address.</li>
+    <li>Open <code>blinkit.com</code> and set your delivery address.</li>
+    <li>Type <code>PriceDrop</code> in the address bar and pick the bookmark.</li>
   </ol></div>
   <div class="panel" id="p3"><ol>
-    <li>Install <b>Tampermonkey</b> or <b>Violentmonkey</b>.</li>
-    <li>Create a new script and paste <code>dist/blinkit-deals.user.js</code> from the repository.</li>
-    <li>A yellow <b>⚡ Deals</b> button now appears on every blinkit.com page.</li>
+    <li>Install Tampermonkey or Violentmonkey.</li>
+    <li>Add a new script and paste the contents of <code>dist/blinkit-deals.user.js</code>.</li>
+    <li>A small <b>Deals</b> button appears on every blinkit.com page.</li>
   </ol></div>
-  <div class="codecard">
-    <div class="hh"><h3>Bookmarklet code</h3><button class="btn" id="copycode">⧉ Copy code</button></div>
-    <textarea id="code" readonly aria-label="Bookmarklet code"></textarea>
-  </div>
+  <details class="code"><summary>Bookmarklet code <button class="btn small" id="copycode" type="button">Copy code</button></summary><div class="in"><textarea id="code" readonly aria-label="Bookmarklet code"></textarea></div></details>
 </div></section>
 
-<section id="faq" style="background:var(--sf2)"><div class="wrap">
-  <div class="center"><span class="eyebrow">FAQ</span><h2>Good questions</h2></div>
+<section id="faq"><div class="wrap">
+  <h2>Questions</h2>
   <div class="faq">
-    <details><summary>Is it safe? Does it see my data?</summary><p>It runs entirely inside your browser tab using your own Blinkit session. There is no server, no analytics and nothing is uploaded. Favourites and price history stay in your browser's local storage.</p></details>
-    <details><summary>Why do I see "no results" the first time?</summary><p>Blinkit prices depend on your delivery location. Open blinkit.com, set your address, then scan again. You can also type latitude and longitude in the sidebar.</p></details>
-    <details><summary>Is this official?</summary><p>No. It is an independent tool and is not affiliated with Blinkit. It only reads pages your account can already see.</p></details>
-    <details><summary>Will it keep working?</summary><p>Blinkit can change its internal APIs without notice. The parser reads responses generically to tolerate small changes, but if a scan ever returns nothing, the tool will tell you what to check.</p></details>
-    <details><summary>How does price-drop tracking work?</summary><p>After every scan the tool remembers each product's price in your browser. On the next scan, anything new gets a NEW badge, and anything cheaper than before gets PRICE ↓.</p></details>
-    <details><summary>Can I try it without Blinkit?</summary><p>Yes. Click <b>Try live demo</b> to explore the full interface with sample data.</p></details>
+    <details><summary>Is it safe? Does it see my data?</summary><p>It runs inside your browser tab using your own Blinkit session. There is no server and no analytics. Saved items and price history stay in your browser's local storage.</p></details>
+    <details><summary>Why do I get no results at first?</summary><p>Blinkit prices depend on your delivery location. Open blinkit.com, set your address, then scan again. You can also type latitude and longitude in the sidebar.</p></details>
+    <details><summary>Is it official?</summary><p>No. It is an independent tool, not affiliated with Blinkit, and it only reads pages your account can already see.</p></details>
+    <details><summary>Will it keep working?</summary><p>Blinkit can change its internal APIs without notice. The parser reads responses generically to tolerate small changes, and the tool tells you when a scan returns nothing.</p></details>
+    <details><summary>How does price-drop tracking work?</summary><p>After each scan it remembers every price in your browser. On the next scan, new products are labelled New and cheaper ones Price drop.</p></details>
+    <details><summary>Can I try it without Blinkit?</summary><p>Yes. Use <b>Try the demo</b> to explore the full interface with sample data.</p></details>
   </div>
 </div></section>
 
-<footer><div class="wrap">Made with ❤️ by <a href="https://www.linkedin.com/in/satyamraj1" target="_blank" rel="noopener">Satyam Raj</a></div></footer>
+<footer><div class="wrap">Made with <span class="h">♥</span> by <a href="https://www.linkedin.com/in/satyamraj1" target="_blank" rel="noopener">Satyam Raj</a></div></footer>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -214,14 +180,14 @@ footer a{color:var(--pr);font-weight:700;text-decoration:none}footer a:hover{tex
   var bm=document.getElementById('bm').getAttribute('href');
   document.getElementById('code').value=bm;
   var tt;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on')},2000)}
-  async function copy(msg,btn,orig){try{await navigator.clipboard.writeText(bm)}catch(_){var t=document.getElementById('code');t.select();document.execCommand('copy')}toast(msg);if(btn){btn.textContent='✓ Copied!';setTimeout(function(){btn.textContent=orig},1800)}}
-  document.getElementById('copy').onclick=function(e){copy('Code copied. Paste it as a bookmark URL.',e.currentTarget,'⧉ Copy for mobile')};
-  document.getElementById('copycode').onclick=function(e){copy('Code copied',e.currentTarget,'⧉ Copy code')};
+  async function copy(msg,btn,orig){try{await navigator.clipboard.writeText(bm)}catch(_){var t=document.getElementById('code');t.select();document.execCommand('copy')}toast(msg);if(btn){btn.textContent='Copied';setTimeout(function(){btn.textContent=orig},1600)}}
+  document.getElementById('copy').onclick=function(e){copy('Code copied. Paste it as a bookmark address.')};
+  document.getElementById('copycode').onclick=function(e){e.preventDefault();e.stopPropagation();copy('Code copied',e.currentTarget,'Copy code')};
   document.getElementById('demo').onclick=function(){window.__BDS_DEMO__=true;var s=document.createElement('script');s.src='dist/deals.js';document.body.appendChild(s)};
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){document.querySelectorAll('.tabs button').forEach(function(x){x.classList.toggle('on',x===b)});document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('on',p.id===b.dataset.t)})}});
   var root=document.documentElement,th=document.getElementById('theme');
   function dark(){var s=null;try{s=localStorage.getItem('pdh_theme')}catch(e){}return s?s==='dark':matchMedia('(prefers-color-scheme:dark)').matches}
-  function apply(d){root.setAttribute('data-theme',d?'dark':'light');th.textContent=d?'☀':'☾'}
+  function apply(d){root.setAttribute('data-theme',d?'dark':'light');th.textContent=d?'Light':'Dark'}
   apply(dark());
   th.onclick=function(){var d=root.getAttribute('data-theme')!=='dark';apply(d);try{localStorage.setItem('pdh_theme',d?'dark':'light')}catch(e){}};
 })();
