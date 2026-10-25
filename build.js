@@ -38,10 +38,13 @@ const header = `// ==UserScript==
 const launcher = `
 (function(){
   if(!window.__BDS__) return;
+  // Opened from the install page (#pricedrop): show Hunter straight away.
+  if(/pricedrop/.test(location.hash)){ history.replaceState(null,'',location.pathname+location.search); return; }
   window.__BDS__.hide();
   var b=document.createElement('button');
-  b.textContent='Deals';
-  b.style.cssText='position:fixed;right:16px;bottom:16px;z-index:2147483646;background:#0c831f;color:#fff;font:600 14px system-ui,sans-serif;border:0;border-radius:8px;padding:11px 16px;box-shadow:0 2px 10px rgba(0,0,0,.25);cursor:pointer';
+  b.textContent='PriceDrop';
+  b.setAttribute('aria-label','Open PriceDrop Hunter');
+  b.style.cssText='position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:2147483646;background:#0c831f;color:#fff;font:700 14px system-ui,sans-serif;border:0;border-radius:999px;padding:12px 18px;box-shadow:0 4px 16px rgba(0,0,0,.3);cursor:pointer';
   b.onclick=function(){window.__BDS__.toggle()};
   document.body.appendChild(b);
 })();

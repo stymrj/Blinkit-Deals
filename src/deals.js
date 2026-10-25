@@ -121,10 +121,14 @@
   let store;
   try { store = Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { store = Object.assign({}, defaults); }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* quota/private mode */ } };
+  store.groups = (store.groups || []).filter(id => GROUPS.some(g => g.id === id));
+  if (!store.groups.length) store.groups = defaults.groups.slice();
+  // v3: Hunter scans every category by itself and leads with the biggest discounts.
+  if (store.v !== 3) { store.groups = GROUPS.map(g => g.id); store.sort = 'disc'; store.depth = 2; store.v = 3; save(); }
 
   // ───────────────────────── State ─────────────────────────
   const S = { products: new Map(), scanning: false, done: 0, total: 0, errors: 0, ctl: { stop: false },
-    q: '', brand: '', cat: '', preset: '', favOnly: false, newOnly: false, shown: 60, tab: 'deals', panel: false, startedAt: 0 };
+    q: '', brand: '', cat: '', preset: '', favOnly: false, newOnly: false, shown: 60, tab: 'best', panel: false, startedAt: 0 };
 
   // ───────────────────────── Scanner ─────────────────────────
   async function scan() {
@@ -136,22 +140,21 @@
     S.scanning = true; S.ctl = { stop: false }; S.done = 0; S.errors = 0; S.total = jobs.length; S.startedAt = Date.now();
     S.products.clear(); S.shown = 60; render();
     const ctl = S.ctl, queue = jobs.slice();
-    const worker = async () => {
-      while (queue.length && !ctl.stop) {
-        const job = queue.shift();
-        try {
-          for (let page = 1; page <= store.depth && !ctl.stop; page++) {
-            const items = await P.fetchPage(job, page, ctl);
-            const fresh = ingest(items);
-            scheduleRender();
-            if (fresh < 3) break;
-            if (items.length && items[items.length - 1].disc < Math.min(store.minDisc, 20)) break; // sorted by discount: rest is below threshold
-          }
-        } catch (e) { if (!ctl.stop) S.errors++; }
-        S.done++; scheduleRender();
-      }
+    const runJob = async job => {
+      try {
+        for (let page = 1; page <= store.depth && !ctl.stop; page++) {
+          const items = await P.fetchPage(job, page, ctl);
+          const fresh = ingest(items);
+          scheduleRender();
+          if (!fresh || items.more === false) break;
+        }
+      } catch (e) { if (!ctl.stop) S.errors++; }
+      S.done++; scheduleRender();
     };
-    await Promise.all(Array.from({ length: (typeof P !== 'undefined' && P.workers) || 5 }, worker));
+    // The first request finds the right data centre; then the workers run in parallel.
+    if (queue.length) await runJob(queue.shift());
+    const worker = async () => { while (queue.length && !ctl.stop) await runJob(queue.shift()); };
+    await Promise.all(Array.from({ length: (typeof P !== 'undefined' && P.workers) || 4 }, worker));
     S.scanning = false;
     recordPrices();
     store.lastScan = Date.now(); save(); render();
@@ -218,8 +221,8 @@
       if (p.disc < store.minDisc) return;
       if (store.maxPrice && p.price > store.maxPrice) return;
       if (S.brand && p.brand !== S.brand) return;
-      if (S.cat && p.cat.split(' › ')[0] !== S.cat) return;
-      if (S.favOnly && !fav.has(p.id)) return;
+      if (S.tab === 'all' && S.cat && p.cat.split(' › ')[0] !== S.cat) return;
+      if ((S.favOnly || S.tab === 'saved') && !fav.has(p.id)) return;
       if (S.newOnly && !p.isNew && !p.was) return;
       if (S.preset && !PRESETS[S.preset][1](p)) return;
       if (q.length) { const t = (p.title + ' ' + p.cat).toLowerCase(); if (!q.every(w => t.includes(w))) return; }
@@ -380,15 +383,6 @@ a.ti:hover{color:var(--pr)}
 .toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--tx);color:var(--bg);padding:12px 18px;border-radius:12px;opacity:0;transition:.2s;pointer-events:none;z-index:9;max-width:90%;font-weight:600}
 .toast.on{transform:translateX(-50%);opacity:1}
 .menu-btn{display:none}
-@media(max-width:900px){
- aside{position:absolute;z-index:4;top:0;bottom:0;left:0;transform:translateX(-105%);transition:transform .22s;width:min(320px,88%);box-shadow:16px 0 40px rgba(0,0,0,.16)}
- aside.open{transform:none}.menu-btn{display:inline-flex}
- header{padding:10px 12px;gap:8px;height:auto;flex-wrap:wrap}
- .logo small,.search kbd,.hb .lb,.sb .lb{display:none}.logo b{font-size:15px}.logo .mk{width:34px;height:34px}
- .search{order:9;flex-basis:100%;max-width:none}
- main{padding:16px 12px 40px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.stats{grid-template-columns:repeat(2,1fr)}
- .st b{font-size:21px}
-}
 kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;font-weight:700}
 .presets{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 16px}
 .presets .chip{padding:6px 13px}
@@ -413,6 +407,44 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
 .ck.no>span{background:color-mix(in srgb,var(--hot) 16%,var(--sf));color:var(--hot)}
 .ck.q>span{background:var(--sf2);color:var(--mt)}
 .ck b{font-weight:700}.ck p{color:var(--mt);font-size:12.5px;margin-top:2px}
+.tabs{display:flex;align-items:center;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.tabs button{height:38px;padding:0 16px;border-radius:99px;font-weight:800;font-size:13.5px;background:var(--sf);border:1px solid var(--bd);color:var(--mt)}
+.tabs button.on{background:var(--tx);border-color:var(--tx);color:var(--bg)}
+.live{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12.5px;font-weight:700;color:var(--pr)}
+.live .i{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.sec{margin-bottom:28px}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.sh h3{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.sh span{color:var(--mt);font-size:12.5px;font-weight:600}
+.more{display:inline-flex;align-items:center;gap:5px;color:var(--pr);font-weight:800;font-size:13px;white-space:nowrap}
+.hs{display:grid;grid-auto-flow:column;grid-auto-columns:210px;gap:14px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.mob{display:none}
+@media(max-width:900px){
+ aside{position:absolute;z-index:4;top:0;bottom:0;left:0;transform:translateX(-105%);transition:transform .22s;width:min(320px,88%);box-shadow:16px 0 40px rgba(0,0,0,.16);padding:18px 16px 40px}
+ aside.open{transform:none}.menu-btn{display:inline-flex}.mob{display:flex}
+ header{padding:10px 12px;gap:8px;height:auto;flex-wrap:wrap}
+ .logo{margin-right:0;min-width:0}.logo small,.logo .mk,.search kbd,.hb .lb,.sb .lb,[data-act=bell].ib,[data-act=theme].ib{display:none}
+ .logo b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .ib,.hb,.sb{height:38px}.ib{width:38px}.hb,.sb{padding:0 11px}
+ .search{order:9;flex-basis:100%;max-width:none;min-width:0}.search input{height:40px}
+ main{padding:14px 12px 40px}
+ .stats,.presets,.tools{display:flex;flex-wrap:nowrap;overflow-x:auto;margin-left:-12px;margin-right:-12px;padding:0 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+ .stats::-webkit-scrollbar,.presets::-webkit-scrollbar,.tools::-webkit-scrollbar{display:none}
+ .stats{gap:8px;margin-bottom:12px}.st{flex:0 0 auto;min-width:118px;padding:10px 12px;border-radius:12px}.st b{font-size:18px}.st span{font-size:11.5px;white-space:nowrap}
+ .presets{margin-top:0;margin-bottom:10px}.presets .chip{flex:0 0 auto}
+ .tools{gap:6px;margin-bottom:14px}.tools select{flex:0 0 auto;height:36px;max-width:150px;font-size:13px}.tools .sp{display:none}.seg{flex:0 0 auto}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .tabs{flex-wrap:nowrap;overflow-x:auto;margin:0 -12px 14px;padding:0 12px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button{flex:0 0 auto;height:36px;padding:0 14px}.live{flex:0 0 auto}
+ .hs{grid-auto-columns:46%;gap:10px;margin:0 -12px;padding:0 12px 6px;scrollbar-width:none}.hs::-webkit-scrollbar{display:none}
+ .sh h3{font-size:16px}.sec{margin-bottom:22px}
+ .card{border-radius:14px}.card:hover{transform:none;box-shadow:none}
+ .inf{padding:10px 10px 12px}.ti{font-size:13px}.ct{font-size:11px}.pr b{font-size:17px}.pr s{font-size:12px}.sv,.up{font-size:11.5px}
+ .acts button{height:34px;font-size:12px;gap:4px}.acts .hide{width:34px}
+ .dc{font-size:11px;padding:2px 6px;left:8px;top:8px}.tg{left:8px;top:32px;font-size:9.5px}.fv{width:30px;height:30px;top:6px;right:6px}
+ .list .im{width:88px;height:88px}
+ .check{margin:20px 0;padding:18px}
+ .toast{bottom:calc(16px + env(safe-area-inset-bottom))}
+}
 `;
   root.innerHTML = '<style>' + CSS + '</style><div class="app" id="app"></div>';
   const app = root.getElementById('app');
@@ -444,6 +476,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   }
   function sidebar() {
     return `<aside class="${sideOpen ? 'open' : ''}">
+ <div class="mob" style="gap:8px;flex-wrap:wrap"><button class="chip" data-act="theme">${ic('moon', 14)}Theme</button><button class="chip" data-act="bell">${ic('bell', 14)}Alerts ${store.tg.on && tgReady() ? 'on' : 'off'}</button><button class="chip" data-act="side">${ic('x', 14)}Close menu</button></div>
  ${typeof captureUI === 'function' && !OFFSITE ? captureUI() : scanUI()}
  <div><h4>${ic('sliders', 15)}Filters</h4>
   <label class="row"><span>Min discount</span><b>${store.minDisc}%</b></label><input type="range" min="0" max="90" step="5" value="${store.minDisc}" data-in="minDisc">
@@ -465,21 +498,8 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     const last = xy[xy.length - 1];
     return `<div class="hist"><svg width="${w + 4}" height="${h}" viewBox="-2 0 ${w + 4} ${h}"><polyline points="${xy.map(a => a.join(',')).join(' ')}" fill="none" stroke="var(--pr)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="var(--pr)"/></svg>Low ${$inr(lo)} · high ${$inr(hi)}</div>`;
   }
-  function watchStrip() {
-    const saved = store.favs.map(id => S.products.get(id)).filter(Boolean);
-    if (!saved.length) return '';
-    let cheaper = 0;
-    const minis = saved.map(p => {
-      const at = store.favAt[p.id], d = at ? at - p.price : 0;
-      if (d > 0) cheaper++;
-      const tag = d > 0 ? `<em class="dn">↓ ${$inr(d)} since saved</em>` : d < 0 ? `<em class="upx">↑ ${$inr(-d)} since saved</em>` : '<em class="eq">Same as when saved</em>';
-      return `<a class="mini" ${p.url ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}><img src="${esc(p.img)}" alt=""><div><span class="ti">${esc(p.title)}</span><b>${$inr(p.price)}</b> · ${p.disc}% off<br>${tag}</div></a>`;
-    }).join('');
-    return `<div class="watch"><div class="wh"><b>${ic('heart', 16)}Saved items</b><span>${cheaper ? cheaper + ' cheaper than when you saved them' : saved.length + ' found in this scan'}</span></div><div class="wl">${minis}</div></div>`;
-  }
   function offsiteCard() {
-    const host = STORE_URL.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
-    return `<div class="check"><h3>Open ${esc(PLATFORM)} to see live deals</h3><p class="note" style="font-size:14px">PriceDrop Hunter reads live prices from ${esc(PLATFORM)} inside your own logged-in tab, so it can only fetch data on ${esc(host)}. Open the store, set your delivery address, then click your PriceDrop Hunter bookmark there.</p><a class="btn" href="${STORE_URL}" target="_blank" rel="noopener" style="margin-top:16px;text-decoration:none">${ic('ext')}Open ${esc(PLATFORM)}</a></div>`;
+    return `<div class="check"><h3>Open ${esc(PLATFORM)} to see live deals</h3><p class="note" style="font-size:14px">PriceDrop Hunter reads live prices inside your own ${esc(PLATFORM)} tab, so it can only fetch deals there.</p><p class="note" style="font-size:14px;margin-top:8px"><b>Userscript installed?</b> Hunter opens by itself on the store. <b>Using the bookmark?</b> After the store opens, tap your PriceDrop Hunter bookmark again on that page.</p><a class="btn" href="${STORE_URL}#pricedrop" target="_blank" rel="noopener" style="margin-top:16px;text-decoration:none">${ic('ext')}Open ${esc(PLATFORM)}</a></div>`;
   }
   function checklist() {
     const capture = typeof captureUI === 'function';
@@ -506,36 +526,39 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   ${spark(p)}
   <div class="acts"><button class="add ${inList ? 'in' : ''}" data-act="add" data-id="${esc(p.id)}">${inList ? ic('check', 16) + 'In list · ' + inList : ic('plus', 16) + 'Add to list'}</button><button class="hide" data-act="hide" data-id="${esc(p.id)}" title="Hide">${ic('eyeoff', 16)}</button></div></div></article>`;
   }
+  const byDisc = (a, b) => b.disc - a.disc || b.save - a.save;
+  function bestView(list) {
+    if (!list.length) return '';
+    const top = list.slice().sort(byDisc).slice(0, 12), fav = new Set(store.favs);
+    const cats = new Map();
+    for (const p of list) { const c = p.cat.split(' › ')[0]; if (!cats.has(c)) cats.set(c, []); cats.get(c).push(p); }
+    const rows = [...cats.entries()].map(([c, ps]) => [c, ps.sort(byDisc)]).sort((x, y) => y[1][0].disc - x[1][0].disc);
+    return `<section class="sec"><div class="sh"><h3>Biggest discounts right now</h3><span>${list.length} deals from ${cats.size} categories</span></div>
+  <div class="grid">${top.map(p => card(p, fav.has(p.id), store.list)).join('')}</div></section>
+ ${rows.map(([c, ps]) => `<section class="sec"><div class="sh"><h3>${esc(c)}</h3><button class="more" data-act="seeall" data-id="${esc(c)}">See all ${ps.length}${ic('ext', 13)}</button></div>
+  <div class="hs">${ps.slice(0, 10).map(p => card(p, fav.has(p.id), store.list)).join('')}</div></section>`).join('')}`;
+  }
   function mainView() {
+    if (OFFSITE) return `<main id="main">${offsiteCard()}</main>`;
+    if (!S.products.size && !S.scanning) return `<main id="main">${checklist()}</main>`;
     const list = filtered();
-    const cats = [...new Set([...S.products.values()].map(p => p.cat.split(' › ')[0]))];
-    const brands = Object.entries([...S.products.values()].reduce((m, p) => (m[p.brand] = (m[p.brand] || 0) + 1, m), {})).sort((a, b) => b[1] - a[1]).slice(0, 40);
-    const avg = list.length ? Math.round(list.reduce((s, p) => s + p.disc, 0) / list.length) : 0;
-    const best = list.reduce((m, p) => p.save > m ? p.save : m, 0);
-    const fav = new Set(store.favs);
-    const when = S.scanning ? `${S.done}/${S.total}` : store.lastScan ? new Date(store.lastScan).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '–';
-    return `<main id="main">
- <div class="stats">
-  <div class="st hl"><b>${list.length}</b><span>deals of ${S.products.size} products</span></div>
-  <div class="st"><b>${avg}%</b><span>average discount</span></div>
-  <div class="st"><b>${$inr(best)}</b><span>biggest saving</span></div>
-  <div class="st"><b>${when}</b><span>${S.scanning ? 'scanning' : store.auto && !OFFSITE ? 'updated · auto every ' + store.auto + ' min' : 'last updated'}</span></div>
- </div>
- <div class="presets">${Object.entries(PRESETS).map(([k, v]) => `<button class="chip ${S.preset === k ? 'on' : ''}" data-act="preset" data-id="${k}">${v[0]}</button>`).join('')}</div>
- ${watchStrip()}
- <div class="tools">
-  <select data-in="sort">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}" ${store.sort === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>
+    const tabs = [['best', 'Best deals'], ['all', 'All deals'], ['saved', 'Saved' + (store.favs.length ? ' · ' + store.favs.length : '')]];
+    const head = `<div class="tabs">${tabs.map(([k, l]) => `<button class="${S.tab === k ? 'on' : ''}" data-act="tab" data-v="${k}">${l}</button>`).join('')}${S.scanning ? `<span class="live">${ic('scan', 14)}Scanning ${S.done}/${S.total}</span>` : ''}</div>`;
+    let body;
+    if (S.tab === 'best') {
+      body = bestView(list) || `<div class="empty"><span class="ei">${ic(S.scanning ? 'scan' : 'tag', 26)}</span><b>${S.scanning ? 'Finding the best deals…' : 'No deals at this discount'}</b>${S.scanning ? 'They appear here as each category comes in.' : 'Lower the minimum discount in the menu.'}</div>`;
+    } else {
+      const cats = [...new Set([...S.products.values()].map(p => p.cat.split(' › ')[0]))];
+      const fav = new Set(store.favs);
+      const tools = S.tab === 'all' ? `<div class="tools">
   <select data-in="cat"><option value="">All categories</option>${cats.map(c => `<option ${S.cat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
-  <select data-in="brand"><option value="">All brands</option>${brands.map(([b, n]) => `<option value="${esc(b)}" ${S.brand === b ? 'selected' : ''}>${esc(b)} (${n})</option>`).join('')}</select>
-  <span class="sp"></span>
-  <div class="seg"><button class="${store.view === 'grid' ? 'on' : ''}" data-act="view" data-v="grid">${ic('grid', 15)}Grid</button><button class="${store.view === 'list' ? 'on' : ''}" data-act="view" data-v="list">${ic('list', 15)}List</button></div>
- </div>
- ${list.length ? `<div class="grid ${store.view}">${list.slice(0, S.shown).map(p => card(p, fav.has(p.id), store.list)).join('')}</div>
+  <select data-in="sort">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}" ${store.sort === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>
+ </div>` : '';
+      body = tools + (list.length ? `<div class="grid ${store.view}">${list.slice(0, S.shown).map(p => card(p, fav.has(p.id), store.list)).join('')}</div>
    ${list.length > S.shown ? `<div style="text-align:center;margin-top:24px"><button class="btn ghost" data-act="more">Show more (${list.length - S.shown} left)</button></div>` : ''}`
-        : OFFSITE ? offsiteCard()
-        : !S.products.size && !S.scanning ? checklist()
-        : `<div class="empty"><span class="ei">${ic(S.scanning ? 'scan' : 'tag', 26)}</span><b>${S.scanning ? 'Looking for deals…' : S.products.size ? 'Nothing matches these filters' : 'No deals yet'}</b>${S.scanning ? 'Results appear here as they come in.' : S.products.size ? 'Try lowering the minimum discount.' : 'Pick categories on the left and press Scan deals.'}</div>`}
-</main>`;
+        : `<div class="empty"><span class="ei">${ic(S.tab === 'saved' ? 'heart' : 'tag', 26)}</span><b>${S.tab === 'saved' ? 'Nothing saved yet' : 'Nothing matches'}</b>${S.tab === 'saved' ? 'Tap the heart on any deal to keep an eye on it.' : 'Try another category or a lower minimum discount.'}</div>`);
+    }
+    return `<main id="main">${head}${body}</main>`;
   }
   function drawer() {
     const items = Object.entries(store.list).map(([id, q]) => [S.products.get(id) || store._cache && store._cache[id], q]).filter(x => x[0]);
@@ -707,6 +730,8 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
         else { store.favs = store.favs.concat(id); const p = S.products.get(id); if (p) store.favAt[id] = p.price; }
         save(); render(); break;
       case 'preset': S.preset = S.preset === id ? '' : id; S.shown = 60; render(); break;
+      case 'tab': S.tab = el.dataset.v; S.shown = 60; if (S.tab !== 'all') S.cat = ''; render(); { const m = root.getElementById('main'); if (m) m.scrollTop = 0; } break;
+      case 'seeall': S.tab = 'all'; S.cat = id; S.shown = 60; render(); { const m = root.getElementById('main'); if (m) m.scrollTop = 0; } break;
       case 'hide': store.hidden.push(id); save(); render(); toast('Hidden — undo via Data › Unhide'); break;
       case 'unhide': store.hidden = []; save(); render(); break;
       case 'add': store.list[id] = (store.list[id] || 0) + 1; { const p = S.products.get(id); if (p) store._cache[id] = p; } save(); render(); break;
@@ -737,7 +762,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   // ───────────────────────── Public API ─────────────────────────
   let prevOverflow = '';
   const api = {
-    show() { host.style.display = 'block'; prevOverflow = document.documentElement.style.overflow; document.documentElement.style.overflow = 'hidden'; render(); },
+    show() { host.style.display = 'block'; if (!OFFSITE && !S.scanning && !S.products.size && typeof captureUI !== 'function') setTimeout(scan, 400); prevOverflow = document.documentElement.style.overflow; document.documentElement.style.overflow = 'hidden'; render(); },
     hide() { host.style.display = 'none'; document.documentElement.style.overflow = prevOverflow; },
     toggle() { host.style.display === 'none' ? api.show() : api.hide(); }
   };

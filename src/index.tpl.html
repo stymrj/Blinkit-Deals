@@ -161,7 +161,7 @@ footer .h{color:var(--ac)}
       <p class="lead">Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans.</p>
       <div class="cta">
         <a class="btn pri" id="bm" href="__BOOKMARKLET__" data-loader="__LOADER__" title="Drag me to your bookmarks bar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7.2 8 11l3.5-3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13.8h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>PriceDrop Hunter</a>
-        <a class="btn out" href="https://blinkit.com/" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>Open Blinkit</a>
+        <a class="btn out" href="https://blinkit.com/#pricedrop" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>Open Blinkit</a>
       </div>
       <p class="hint">Drag the button to your bookmarks bar. On a phone? <button id="copy" type="button">Copy the code</button></p>
     </div>
@@ -274,6 +274,7 @@ footer .h{color:var(--ac)}
   document.getElementById('code').value=bm;
   var tt;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on')},2200)}
   async function copy(msg,btn,orig,txt){txt=txt||bm;try{await navigator.clipboard.writeText(txt)}catch(_){var t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}toast(msg);if(btn){var l=btn.querySelector('span')||btn;l.textContent='Copied';setTimeout(function(){l.textContent=orig},1600)}}
+  document.getElementById('bm').addEventListener('click',function(e){e.preventDefault();toast('Drag this button to your bookmarks bar, then tap it on Blinkit. On a phone, use Copy the code.')});
   document.getElementById('copy').onclick=function(){copy('Mobile loader copied. Paste it as a bookmark address.',null,null,ld)};
   document.getElementById('copyloader').onclick=function(e){copy('Mobile loader copied',e.currentTarget,'Copy mobile loader',ld)};
   document.getElementById('copycode').onclick=function(e){copy('Full code copied',e.currentTarget,'Copy full code')};
