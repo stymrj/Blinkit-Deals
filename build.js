@@ -22,7 +22,9 @@ const header = `// ==UserScript==
 // @description  Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans.
 // @match        https://www.blinkit.com/*
 // @run-at       document-idle
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
+// @connect      api.telegram.org
 // ==/UserScript==
 `;
 const launcher = `
