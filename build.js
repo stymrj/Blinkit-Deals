@@ -16,7 +16,7 @@ fs.writeFileSync(path.join(__dirname, 'dist/bookmarklet.txt'), bookmarklet);
 fs.copyFileSync(src, path.join(__dirname, 'dist/deals.js'));
 // Tampermonkey/Violentmonkey build: loads quietly, adds a floating launcher button.
 const header = `// ==UserScript==
-// @name         Blinkit Deal Scout
+// @name         PriceDrop Hunter for Blinkit
 // @namespace    blinkit-deals
 // @version      2.0.0
 // @description  Scan Blinkit across dozens of keywords and collections, rank by real savings, and build a smart basket.

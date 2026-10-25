@@ -1,5 +1,5 @@
 /*!
- * Blinkit Deal Scout
+ * PriceDrop Hunter for Blinkit
  * Bookmarklet / userscript for blinkit.com. Runs in your own browser session.
  * DEMO mode (synthetic data) is used anywhere else.
  */
@@ -83,7 +83,7 @@
   const P = {
     key: 'bds_v1', tag: 'BDS', hostRe: /(^|\.)blinkit\.com$/,
     defaults: { groups: ['grocery', 'snacks', 'dairy'], lat: '', lon: '', depth: 3 },
-    logo: 'Blinkit', logoTag: 'DEAL SCOUT',
+    logo: 'PriceDrop', logoTag: 'HUNTER',
     colors: ['#0c831f', '#096b19', '#f8cb46', '#34c759', '#5fd97f'],
     jobs: st => {
       const jobs = [];

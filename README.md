@@ -1,4 +1,4 @@
-# ⚡ Blinkit Deal Scout
+# ⚡ PriceDrop Hunter for Blinkit
 
 A client-side bookmarklet and userscript for **Blinkit**. It sweeps dozens of keywords and collections in the background, finds the steepest discounts, tracks price drops between scans, and helps you build a smart basket. No manual scrolling. Works on PC, Mac, Android and iOS.
 
@@ -26,7 +26,7 @@ A client-side bookmarklet and userscript for **Blinkit**. It sweeps dozens of ke
 ### 💻 Desktop
 1. Run `node build.js`, then open `index.html` (or `python3 -m http.server 8766` and visit `http://localhost:8766`).
 2. Show your bookmarks bar (`Ctrl+Shift+B` / `Cmd+Shift+B`).
-3. Drag the **⚡ Deal Scout** button onto the bar.
+3. Drag the **⚡ PriceDrop Hunter** button onto the bar.
 4. Open [blinkit.com](https://blinkit.com), set your delivery address, click the bookmark, press **Scan deals**.
 
 **Userscript:** install `dist/blinkit-deals.user.js` in Tampermonkey or Violentmonkey. A **⚡ Deals** button appears on every blinkit.com page.
