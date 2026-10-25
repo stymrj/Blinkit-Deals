@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blinkit Deal Scout</title>
+<style>
+:root{--bg:#f4f6fb;--sf:#fff;--tx:#161a2b;--mt:#6b7391;--bd:#e1e5f0;--pr:#0c831f;--ac:#f8cb46}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1220;--sf:#171c30;--tx:#eef1fb;--mt:#8b94b8;--bd:#2a3150;--pr:#34c759}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+.hero{background:linear-gradient(135deg,#0c831f,#096b19);color:#fff;padding:64px 16px 80px;text-align:center}
+.hero h1{font-size:clamp(30px,6vw,52px);margin:0 0 12px;letter-spacing:-1.5px}
+.hero h1 i{background:var(--ac);color:#111;border-radius:12px;padding:0 12px;font-style:normal}
+.hero p{max-width:620px;margin:0 auto 28px;opacity:.9;font-size:18px}
+.cta{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.bm{background:var(--ac);color:#111;font-weight:800;padding:14px 24px;border-radius:12px;text-decoration:none;cursor:grab;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.sec{background:rgba(255,255,255,.16);color:#fff;font-weight:700;padding:14px 22px;border-radius:12px;border:0;font-size:16px;cursor:pointer}
+.wrap{max-width:980px;margin:-40px auto 60px;padding:0 16px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:24px;margin-bottom:20px;box-shadow:0 6px 24px rgba(20,30,70,.08)}
+h2{margin:0 0 12px;font-size:22px;letter-spacing:-.4px}
+ol{padding-left:22px;margin:0}li{margin:6px 0}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.feat div{background:var(--bg);border-radius:12px;padding:14px}.feat b{display:block;margin-bottom:2px}.feat span{color:var(--mt);font-size:14px}
+code,textarea{font:13px ui-monospace,Menlo,monospace}
+textarea{width:100%;height:90px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);padding:10px}
+.note{color:var(--mt);font-size:14px}
+</style>
+</head>
+<body>
+<section class="hero">
+  <h1>Blinkit <i>Deal Scout</i></h1>
+  <p>Scan Blinkit across dozens of keywords and collections, rank by real savings, and build a smart basket.</p>
+  <div class="cta">
+    <a class="bm" id="bm" href="__BOOKMARKLET__" title="Drag me to your bookmarks bar">⚡ Deal Radar</a>
+    <button class="sec" id="demo">▶ Try live demo</button>
+    <button class="sec" id="copy">⧉ Copy for mobile</button>
+  </div>
+  <p class="note" style="color:#fff;opacity:.75;margin-top:16px;font-size:14px">↑ Drag the yellow button to your bookmarks bar</p>
+</section>
+<div class="wrap">
+  <div class="card"><h2>Install</h2>
+    <ol>
+      <li><b>Desktop:</b> drag <b>⚡ Deal Radar</b> to your bookmarks bar. Open <code>blinkit.com</code>, set your delivery location, click the bookmark, press <b>Scan deals</b>.</li>
+      <li><b>Mobile:</b> tap <b>Copy for mobile</b>, create any bookmark, edit it and paste as the URL. On blinkit.com type the bookmark name in the address bar and pick it.</li>
+    </ol>
+    <p class="note">Everything runs in your browser using your own Blinkit session. Nothing is sent anywhere else. The script is self-contained (no remote code loading).</p>
+  </div>
+  <div class="card"><h2>What's better</h2>
+    <div class="feat">
+      <div><b>Full-screen app UI</b><span>Responsive grid/list, dark mode, isolated styles (Shadow DOM).</span></div>
+      <div><b>Best-deal score</b><span>Ranks by discount + rupee savings, not just percent.</span></div>
+      <div><b>Price-drop tracking</b><span>NEW and PRICE ↓ badges versus your previous scan.</span></div>
+      <div><b>Shopping list</b><span>Quantities, totals, total savings, copy or open all links.</span></div>
+      <div><b>Smart filters</b><span>Brand, category, max price, min discount, favourites, in-stock.</span></div>
+      <div><b>Export</b><span>CSV download and copy-to-share text for WhatsApp.</span></div>
+      <div><b>Resilient scanning</b><span>Parallel workers, retries with backoff, response-shape agnostic parser, stop anytime.</span></div>
+      <div><b>Remembers you</b><span>Pincode, filters, favourites and theme persist.</span></div>
+    </div>
+  </div>
+  <div class="card"><h2>Bookmarklet code</h2><textarea id="code" readonly></textarea></div>
+</div>
+<footer style="text-align:center;padding:0 16px 40px;color:var(--mt)">Made with ❤️ by <b>Satyam Raj</b> · <a href="https://www.linkedin.com/in/satyamraj1" target="_blank" rel="noopener" style="color:var(--pr);text-decoration:none;font-weight:600">LinkedIn</a></footer>
+<script>
+const bm=document.getElementById('bm').getAttribute('href');
+document.getElementById('code').value=bm;
+document.getElementById('copy').onclick=async e=>{try{await navigator.clipboard.writeText(bm);e.target.textContent='✓ Copied'}catch(_){const t=document.getElementById('code');t.select();document.execCommand('copy');e.target.textContent='✓ Copied'}};
+document.getElementById('demo').onclick=()=>{window.__BDS_DEMO__=true;const s=document.createElement('script');s.src='dist/deals.js';document.body.appendChild(s)};
+</script>
+</body>
+</html>
