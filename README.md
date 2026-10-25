@@ -84,4 +84,4 @@ Blinkit-Deals/
 
 ---
 
-<p align="center">Made with ❤️ by <b>Satyam Raj</b> · <a href="https://www.linkedin.com/in/satyamraj1">LinkedIn</a></p>
+<p align="center">Made with ❤️ by <a href="https://www.linkedin.com/in/satyamraj1"><b>Satyam Raj</b></a></p>
