@@ -1,0 +1,56 @@
+name: Telegram deal alerts
+
+on:
+  schedule:
+    - cron: '1,31 3-18 * * *'   # every 30 minutes, 08:31 to 00:01 IST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print the messages instead of sending them
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telegram-bot
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    # Scheduled runs start only after you set the repository variable BOT_ENABLED to true.
+    if: github.event_name == 'workflow_dispatch' || vars.BOT_ENABLED == 'true'
+    runs-on: ${{ vars.RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      BLINKIT_LAT: ${{ secrets.BLINKIT_LAT }}
+      BLINKIT_LON: ${{ secrets.BLINKIT_LON }}
+      BLINKIT_COOKIE: ${{ secrets.BLINKIT_COOKIE }}
+      MIN_DISCOUNT: ${{ vars.MIN_DISCOUNT }}
+      THRESHOLDS: ${{ vars.THRESHOLDS }}
+      GROUPS: ${{ vars.GROUPS }}
+      PAGES: ${{ vars.PAGES }}
+      DIGEST_HOUR_IST: ${{ vars.DIGEST_HOUR_IST }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Restore last run
+        uses: actions/cache/restore@v4
+        with:
+          path: data/state.json
+          key: bot-state-${{ github.run_id }}
+          restore-keys: bot-state-
+      - name: Scan and alert
+        run: node bot/run.js
+      - name: Remember this run
+        if: always() && hashFiles('data/state.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: data/state.json
+          key: bot-state-${{ github.run_id }}-${{ github.run_attempt }}

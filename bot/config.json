@@ -1,0 +1,250 @@
+{
+  "minDiscount": 60,
+  "pages": 2,
+  "groups": [
+    {
+      "id": "grocery",
+      "name": "Grocery & Staples",
+      "minDiscount": 60,
+      "subs": [
+        [
+          "atta",
+          "Atta"
+        ],
+        [
+          "rice",
+          "Rice"
+        ],
+        [
+          "dal",
+          "Dal"
+        ],
+        [
+          "oil",
+          "Oil"
+        ],
+        [
+          "ghee",
+          "Ghee"
+        ],
+        [
+          "sugar",
+          "Sugar"
+        ],
+        [
+          "salt",
+          "Salt"
+        ],
+        [
+          "masala",
+          "Masala"
+        ]
+      ]
+    },
+    {
+      "id": "snacks",
+      "name": "Snacks & Sweets",
+      "minDiscount": 70,
+      "subs": [
+        [
+          "chips",
+          "Chips"
+        ],
+        [
+          "biscuits",
+          "Biscuits"
+        ],
+        [
+          "namkeen",
+          "Namkeen"
+        ],
+        [
+          "chocolate",
+          "Chocolate"
+        ],
+        [
+          "ice cream",
+          "Ice cream"
+        ],
+        [
+          "noodles",
+          "Noodles"
+        ]
+      ]
+    },
+    {
+      "id": "drinks",
+      "name": "Drinks",
+      "minDiscount": 70,
+      "subs": [
+        [
+          "tea",
+          "Tea"
+        ],
+        [
+          "coffee",
+          "Coffee"
+        ],
+        [
+          "juice",
+          "Juice"
+        ],
+        [
+          "cold drink",
+          "Cold drink"
+        ],
+        [
+          "water",
+          "Water"
+        ]
+      ]
+    },
+    {
+      "id": "dairy",
+      "name": "Dairy & Bread",
+      "minDiscount": 60,
+      "subs": [
+        [
+          "milk",
+          "Milk"
+        ],
+        [
+          "paneer",
+          "Paneer"
+        ],
+        [
+          "curd",
+          "Curd"
+        ],
+        [
+          "butter",
+          "Butter"
+        ],
+        [
+          "cheese",
+          "Cheese"
+        ],
+        [
+          "eggs",
+          "Eggs"
+        ],
+        [
+          "bread",
+          "Bread"
+        ]
+      ]
+    },
+    {
+      "id": "care",
+      "name": "Personal Care",
+      "minDiscount": 70,
+      "subs": [
+        [
+          "shampoo",
+          "Shampoo"
+        ],
+        [
+          "soap",
+          "Soap"
+        ],
+        [
+          "toothpaste",
+          "Toothpaste"
+        ],
+        [
+          "face wash",
+          "Face wash"
+        ],
+        [
+          "diaper",
+          "Diaper"
+        ],
+        [
+          "sanitary",
+          "Sanitary"
+        ]
+      ]
+    },
+    {
+      "id": "home",
+      "name": "Home & Cleaning",
+      "minDiscount": 70,
+      "subs": [
+        [
+          "detergent",
+          "Detergent"
+        ],
+        [
+          "dishwash",
+          "Dishwash"
+        ],
+        [
+          "cleaner",
+          "Cleaner"
+        ],
+        [
+          "tissue",
+          "Tissue"
+        ],
+        [
+          "mop",
+          "Mop"
+        ]
+      ]
+    },
+    {
+      "id": "fresh",
+      "name": "Fresh",
+      "minDiscount": 60,
+      "subs": [
+        [
+          "fruits",
+          "Fruits"
+        ],
+        [
+          "vegetables",
+          "Vegetables"
+        ],
+        [
+          "onion",
+          "Onion"
+        ],
+        [
+          "tomato",
+          "Tomato"
+        ],
+        [
+          "potato",
+          "Potato"
+        ]
+      ]
+    },
+    {
+      "id": "tech",
+      "name": "Electronics",
+      "minDiscount": 85,
+      "subs": [
+        [
+          "charger",
+          "Charger"
+        ],
+        [
+          "earphones",
+          "Earphones"
+        ],
+        [
+          "cable",
+          "Cable"
+        ],
+        [
+          "battery",
+          "Battery"
+        ],
+        [
+          "power bank",
+          "Power bank"
+        ]
+      ]
+    }
+  ]
+}
