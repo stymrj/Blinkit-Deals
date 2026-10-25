@@ -106,6 +106,7 @@
     fetchPage,
     noLocation: () => noLoc,
     noLocMsg: 'No results. Open blinkit.com, set your delivery address, then scan again (or enter latitude and longitude in the sidebar).',
+    locCheck: () => { const l = loc(); return !!(l.lat && l.lon); },
     locUI: (st, e) => `<label class="row" style="margin-bottom:8px"><span>Latitude</span><input class="fld" style="width:120px" data-in="lat" placeholder="auto" value="${e(st.lat)}" inputmode="decimal"></label>
   <label class="row" style="margin-bottom:8px"><span>Longitude</span><input class="fld" style="width:120px" data-in="lon" placeholder="auto" value="${e(st.lon)}" inputmode="decimal"></label>`,
     locInput: (k, v) => { if (k === 'lat' || k === 'lon') { store[k] = v.replace(/[^\d.\-]/g, '').slice(0, 12); save(); return true; } return false; }
@@ -156,7 +157,7 @@
 
   // ───────────────────────── State ─────────────────────────
   const S = { products: new Map(), scanning: false, done: 0, total: 0, errors: 0, ctl: { stop: false },
-    q: '', brand: '', cat: '', favOnly: false, newOnly: false, shown: 60, tab: 'deals', panel: false, startedAt: 0 };
+    q: '', brand: '', cat: '', preset: '', favOnly: false, newOnly: false, shown: 60, tab: 'deals', panel: false, startedAt: 0 };
 
   // ───────────────────────── Scanner ─────────────────────────
   async function scan() {
@@ -186,10 +187,7 @@
     };
     await Promise.all(Array.from({ length: (typeof P !== 'undefined' && P.workers) || 5 }, worker));
     S.scanning = false;
-    const prices = store.prices;
-    S.products.forEach(p => { prices[p.id] = p.price; });
-    const ids = Object.keys(prices);
-    if (ids.length > 6000) ids.slice(0, ids.length - 6000).forEach(k => delete prices[k]);
+    recordPrices();
     store.lastScan = Date.now(); save(); render();
     notify();
     if (P.noLocation() && !S.products.size) { toast(P.noLocMsg); return; }
@@ -197,6 +195,43 @@
   }
 
   // ───────────────────────── Filtering ─────────────────────────
+  // Unit price: rupees per kg, litre or piece, read from the pack size in the title.
+  const UNITS = { kg: ['kg', 1], kgs: ['kg', 1], g: ['kg', .001], gm: ['kg', .001], gms: ['kg', .001], gram: ['kg', .001], grams: ['kg', .001], l: ['L', 1], ltr: ['L', 1], litre: ['L', 1], liter: ['L', 1], ml: ['L', .001], pc: ['pc', 1], pcs: ['pc', 1], piece: ['pc', 1], pieces: ['pc', 1], unit: ['pc', 1], units: ['pc', 1] };
+  function unitOf(t) {
+    const m = String(t).toLowerCase().match(/(?:(\d+)\s*[x×]\s*)?(\d+(?:\.\d+)?)\s*(kgs?|gms?|grams?|g|ltr|litre|liter|l|ml|pcs?|pieces?|units?)\b/);
+    if (!m || !UNITS[m[3]]) return null;
+    const u = UNITS[m[3]], qty = (m[1] ? +m[1] : 1) * +m[2] * u[1];
+    return qty > 0 ? { base: u[0], qty } : null;
+  }
+  const r1 = n => n < 10 ? '₹' + n.toFixed(1) : $inr(n);
+  function unitLabel(p) {
+    if (!p.unit) return '';
+    const per = p.price / p.unit.qty;
+    if (p.unit.base === 'pc') return r1(per) + ' per piece';
+    return p.unit.qty < 1 ? r1(per / 10) + ' per 100' + (p.unit.base === 'kg' ? ' g' : ' ml') : r1(per) + ' per ' + p.unit.base;
+  }
+  const unitVal = p => p.unit ? p.price / p.unit.qty : 1e12;
+  const PRESETS = {
+    under99: ['Under ₹99', p => p.price <= 99],
+    half: ['50% off or more', p => p.disc >= 50],
+    big: ['Save ₹100+', p => p.save >= 100],
+    drops: ['Price drops', p => !!p.was],
+    lowest: ['Lowest ever', p => !!p.lowEver],
+    value: ['Best value per kg / L', p => !!p.unit]
+  };
+  // Price history: a few points per product, kept only in this browser.
+  store.hist = store.hist || {};
+  store.favAt = store.favAt || {};
+  function recordPrices() {
+    const now = Date.now(), h = store.hist;
+    S.products.forEach(p => {
+      store.prices[p.id] = p.price;
+      const a = h[p.id] || (h[p.id] = []), last = a[a.length - 1];
+      if (!last || last[1] !== p.price || now - last[0] > 864e5) { a.push([now, p.price]); if (a.length > 10) a.shift(); }
+    });
+    const ks = Object.keys(h); if (ks.length > 2500) ks.slice(0, ks.length - 2500).forEach(k => delete h[k]);
+    const ps = Object.keys(store.prices); if (ps.length > 6000) ps.slice(0, ps.length - 6000).forEach(k => delete store.prices[k]);
+  }
   const score = p => p.disc + Math.min(30, p.save / 8);
   const SORTS = {
     score: ['Best deal', (a, b) => score(b) - score(a)],
@@ -204,6 +239,7 @@
     save: ['Biggest saving ₹', (a, b) => b.save - a.save],
     pasc: ['Price: low → high', (a, b) => a.price - b.price],
     pdesc: ['Price: high → low', (a, b) => b.price - a.price],
+    unit: ['Unit price: low → high', (a, b) => unitVal(a) - unitVal(b)],
     name: ['Name A–Z', (a, b) => a.title.localeCompare(b.title)]
   };
   function filtered() {
@@ -219,10 +255,11 @@
       if (S.cat && p.cat.split(' › ')[0] !== S.cat) return;
       if (S.favOnly && !fav.has(p.id)) return;
       if (S.newOnly && !p.isNew && !p.was) return;
+      if (S.preset && !PRESETS[S.preset][1](p)) return;
       if (q.length) { const t = (p.title + ' ' + p.cat).toLowerCase(); if (!q.every(w => t.includes(w))) return; }
       out.push(p);
     });
-    return out.sort(SORTS[store.sort][1]);
+    return out.sort(S.preset === 'value' ? SORTS.unit[1] : SORTS[store.sort][1]);
   }
 
   // ───────────────────────── UI ─────────────────────────
@@ -253,7 +290,9 @@
     sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
     tag: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
     ext: '<path d="M14 3h7v7M10 14 21 3M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
-    arrowdown: '<path d="M12 4v13M6.5 11.5 12 17l5.5-5.5"/><path d="M6 21h12"/>'
+    arrowdown: '<path d="M12 4v13M6.5 11.5 12 17l5.5-5.5"/><path d="M6 21h12"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'
   };
   const ic = (n, s) => `<svg class="i" viewBox="0 0 24 24" width="${s || 18}" height="${s || 18}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
   const CSS = `
@@ -384,6 +423,29 @@ a.ti:hover{color:var(--pr)}
  .st b{font-size:21px}
 }
 kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;font-weight:700}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 16px}
+.presets .chip{padding:6px 13px}
+.tg.low{background:var(--ok);color:#fff}
+.up{font-size:12px;color:var(--mt);font-weight:600}
+.hist{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--mt);font-weight:600;margin-top:2px}
+.hist svg{flex:none}
+.watch{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:14px 16px;margin-bottom:18px}
+.wh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.wh b{display:flex;align-items:center;gap:8px;font-weight:800}.wh b .i{color:var(--hot);fill:var(--hot)}
+.wh span{color:var(--mt);font-size:12.5px;font-weight:600}
+.wl{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.mini{flex:none;width:230px;display:flex;gap:10px;align-items:center;border:1px solid var(--bd);border-radius:12px;padding:8px;text-decoration:none;color:inherit;background:var(--bg)}
+.mini img{width:48px;height:48px;border-radius:9px;object-fit:cover;background:var(--sf2)}
+.mini div{min-width:0;font-size:12.5px}.mini .ti{-webkit-line-clamp:1;font-size:13px}
+.mini em{font-style:normal;font-weight:700;font-size:11.5px}.mini .dn{color:var(--ok)}.mini .upx{color:var(--hot)}.mini .eq{color:var(--mt)}
+.check{max-width:520px;margin:40px auto;background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:24px}
+.check h3{font-size:19px;font-weight:800;margin-bottom:14px;letter-spacing:-.3px}
+.ck{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--bd)}
+.ck>span{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none}
+.ck.ok>span{background:color-mix(in srgb,var(--ok) 16%,var(--sf));color:var(--ok)}
+.ck.no>span{background:color-mix(in srgb,var(--hot) 16%,var(--sf));color:var(--hot)}
+.ck.q>span{background:var(--sf2);color:var(--mt)}
+.ck b{font-weight:700}.ck p{color:var(--mt);font-size:12.5px;margin-top:2px}
 `;
   root.innerHTML = '<style>' + CSS + '</style><div class="app" id="app"></div>';
   const app = root.getElementById('app');
@@ -427,17 +489,50 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   <p class="note" style="margin-top:14px"><kbd>/</kbd> search &nbsp;<kbd>S</kbd> scan &nbsp;<kbd>Esc</kbd> close</p></div>
 </aside>`;
   }
+  function spark(p) {
+    const pts = (store.hist[p.id] || []).map(x => x[1]);
+    if (pts[pts.length - 1] !== p.price) pts.push(p.price);
+    if (pts.length < 2) return '';
+    const lo = Math.min(...pts), hi = Math.max(...pts), w = 64, h = 18, n = pts.length - 1;
+    const xy = pts.map((v, i) => [Math.round(i / n * w), hi === lo ? h / 2 : Math.round(2 + (hi - v) / (hi - lo) * (h - 4))]);
+    const last = xy[xy.length - 1];
+    return `<div class="hist"><svg width="${w + 4}" height="${h}" viewBox="-2 0 ${w + 4} ${h}"><polyline points="${xy.map(a => a.join(',')).join(' ')}" fill="none" stroke="var(--pr)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="var(--pr)"/></svg>Low ${$inr(lo)} · high ${$inr(hi)}</div>`;
+  }
+  function watchStrip() {
+    const saved = store.favs.map(id => S.products.get(id)).filter(Boolean);
+    if (!saved.length) return '';
+    let cheaper = 0;
+    const minis = saved.map(p => {
+      const at = store.favAt[p.id], d = at ? at - p.price : 0;
+      if (d > 0) cheaper++;
+      const tag = d > 0 ? `<em class="dn">↓ ${$inr(d)} since saved</em>` : d < 0 ? `<em class="upx">↑ ${$inr(-d)} since saved</em>` : '<em class="eq">Same as when saved</em>';
+      return `<a class="mini" ${p.url && p.url !== '#demo' ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}><img src="${esc(p.img)}" alt=""><div><span class="ti">${esc(p.title)}</span><b>${$inr(p.price)}</b> · ${p.disc}% off<br>${tag}</div></a>`;
+    }).join('');
+    return `<div class="watch"><div class="wh"><b>${ic('heart', 16)}Saved items</b><span>${cheaper ? cheaper + ' cheaper than when you saved them' : saved.length + ' found in this scan'}</span></div><div class="wl">${minis}</div></div>`;
+  }
+  function checklist() {
+    const capture = typeof captureUI === 'function';
+    const loc = typeof fkLocCheck === 'function' ? fkLocCheck() : (typeof P !== 'undefined' && P.locCheck ? P.locCheck() : null);
+    const rows = [
+      [true, 'You are on ' + PLATFORM, ''],
+      [loc, 'Delivery location set', loc === false ? 'Set your delivery address on ' + PLATFORM + ', then reopen Hunter.' : 'Make sure your delivery address is set on ' + PLATFORM + '.'],
+      [typeof GM_xmlhttpRequest === 'function' ? true : null, 'Userscript installed', 'Optional. Recommended for reliable Telegram alerts.'],
+      [tgReady() ? true : null, 'Telegram connected', 'Optional. Add your bot under Telegram alerts in the sidebar.']
+    ];
+    return `<div class="check"><h3>Before your first ${capture ? 'capture' : 'scan'}</h3>${rows.map(([ok, t, hint]) => `<div class="ck ${ok ? 'ok' : ok === false ? 'no' : 'q'}"><span>${ic(ok ? 'check' : ok === false ? 'x' : 'info', 15)}</span><div><b>${t}</b>${!ok && hint ? `<p>${hint}</p>` : ''}</div></div>`).join('')}<button class="btn" data-act="scan" style="margin-top:16px">${ic('scan')}${capture ? 'Auto-scroll page' : 'Scan deals'}</button></div>`;
+  }
   function card(p, fav, qtyMap) {
     const inList = qtyMap[p.id];
     return `<article class="card ${p.inStock ? '' : 'oos'}">
  <div class="im" style="background-image:url('${esc(String(p.img).replace(/'/g, '%27'))}')">
-  <span class="dc ${p.disc >= 60 ? 'hot' : ''}">${p.disc}% OFF</span>${p.isNew ? '<span class="tg">New</span>' : p.was ? `<span class="tg">${ic('arrowdown', 11)}Price drop</span>` : ''}
+  <span class="dc ${p.disc >= 60 ? 'hot' : ''}">${p.disc}% OFF</span>${p.isNew ? '<span class="tg">New</span>' : p.lowEver ? `<span class="tg low">${ic('star', 11)}Lowest ever</span>` : p.was ? `<span class="tg">${ic('arrowdown', 11)}Price drop</span>` : ''}
   <button class="fv ${fav ? 'on' : ''}" data-act="fav" data-id="${esc(p.id)}" title="${fav ? 'Saved' : 'Save'}">${ic('heart', 17)}</button></div>
  <div class="inf"><a class="ti" ${p.url && p.url !== '#demo' ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}>${esc(p.title)}</a>
   <div class="ct">${esc(p.cat)}</div>
   <div class="pr"><b>${$inr(p.price)}</b><s>${$inr(p.mrp)}</s></div>
   <div class="sv">Save ${$inr(p.save)}${p.inStock ? '' : ' · <i>Out of stock</i>'}</div>
-  ${p.was ? `<div class="was">Was ${$inr(p.was)} last time</div>` : ''}
+  ${p.unit ? `<div class="up">${unitLabel(p)}</div>` : ''}
+  ${spark(p)}
   <div class="acts"><button class="add ${inList ? 'in' : ''}" data-act="add" data-id="${esc(p.id)}">${inList ? ic('check', 16) + 'In list · ' + inList : ic('plus', 16) + 'Add to list'}</button><button class="hide" data-act="hide" data-id="${esc(p.id)}" title="Hide">${ic('eyeoff', 16)}</button></div></div></article>`;
   }
   function mainView() {
@@ -455,6 +550,8 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   <div class="st"><b>${$inr(best)}</b><span>biggest saving</span></div>
   <div class="st"><b>${when}</b><span>${S.scanning ? 'scanning' : store.auto && !DEMO ? 'updated · auto every ' + store.auto + ' min' : 'last updated'}</span></div>
  </div>
+ <div class="presets">${Object.entries(PRESETS).map(([k, v]) => `<button class="chip ${S.preset === k ? 'on' : ''}" data-act="preset" data-id="${k}">${v[0]}</button>`).join('')}</div>
+ ${watchStrip()}
  <div class="tools">
   <select data-in="sort">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}" ${store.sort === k ? 'selected' : ''}>${v[0]}</option>`).join('')}</select>
   <select data-in="cat"><option value="">All categories</option>${cats.map(c => `<option ${S.cat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
@@ -464,6 +561,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
  </div>
  ${list.length ? `<div class="grid ${store.view}">${list.slice(0, S.shown).map(p => card(p, fav.has(p.id), store.list)).join('')}</div>
    ${list.length > S.shown ? `<div style="text-align:center;margin-top:24px"><button class="btn ghost" data-act="more">Show more (${list.length - S.shown} left)</button></div>` : ''}`
+        : !DEMO && !S.products.size && !S.scanning ? checklist()
         : `<div class="empty"><span class="ei">${ic(S.scanning ? 'scan' : 'tag', 26)}</span><b>${S.scanning ? 'Looking for deals…' : S.products.size ? 'Nothing matches these filters' : 'No deals yet'}</b>${S.scanning ? 'Results appear here as they come in.' : S.products.size ? 'Try lowering the minimum discount.' : 'Pick categories on the left and press Scan deals.'}</div>`}
 </main>`;
   }
@@ -519,6 +617,12 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
       if (!allowed(p) || S.products.has(p.id)) continue;
       const prev = store.prices[p.id];
       p.isNew = prev == null; p.was = prev != null && prev > p.price ? prev : 0;
+      p.unit = unitOf(p.title);
+      const hs = store.hist[p.id];
+      if (hs && hs.length) {
+        const ps = hs.map(x => x[1]), lo = Math.min(...ps), hi = Math.max(...ps);
+        p.low = Math.min(lo, p.price); p.lowEver = p.price < lo || (p.price === lo && hi > lo);
+      }
       S.products.set(p.id, p); fresh++;
     }
     return fresh;
@@ -550,7 +654,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     const fav = new Set(store.favs), out = [];
     S.products.forEach(p => {
       if (!p.inStock) return;
-      const hit = p.disc >= store.tg.minDisc || (store.tg.drops && p.was) || (store.tg.watch && p.was && fav.has(p.id));
+      const hit = p.disc >= store.tg.minDisc || (store.tg.drops && p.was) || (store.tg.watch && fav.has(p.id) && (p.was || store.favAt[p.id] > p.price));
       const last = store.sent[p.id];
       if (hit && (last == null || p.price < last)) out.push(p);
     });
@@ -626,7 +730,11 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
         break;
       case 'view': store.view = el.dataset.v; save(); render(); break;
       case 'more': S.shown += 60; render(); break;
-      case 'fav': store.favs = store.favs.includes(id) ? store.favs.filter(x => x !== id) : store.favs.concat(id); save(); render(); break;
+      case 'fav':
+        if (store.favs.includes(id)) { store.favs = store.favs.filter(x => x !== id); delete store.favAt[id]; }
+        else { store.favs = store.favs.concat(id); const p = S.products.get(id); if (p) store.favAt[id] = p.price; }
+        save(); render(); break;
+      case 'preset': S.preset = S.preset === id ? '' : id; S.shown = 60; render(); break;
       case 'hide': store.hidden.push(id); save(); render(); toast('Hidden — undo via Data › Unhide'); break;
       case 'unhide': store.hidden = []; save(); render(); break;
       case 'add': store.list[id] = (store.list[id] || 0) + 1; { const p = S.products.get(id); if (p) store._cache[id] = p; } save(); render(); break;

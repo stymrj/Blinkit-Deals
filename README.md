@@ -7,7 +7,12 @@ Sweeps Blinkit through keyword searches and collection listings, ranks products 
 ## Features
 
 - Ranks by percent off and rupees saved together
-- Labels products that are new or cheaper than your last scan
+- Labels products that are new, cheaper than last time, or at their lowest price ever
+- Price history sparkline on every product you have seen before
+- Saved items strip showing how much each one dropped since you saved it
+- Unit price (per kg, litre or piece) with a value sort
+- One-tap presets: under ₹99, 50% off, save ₹100+, price drops, lowest ever, best value
+- A setup checklist on first open
 - Filters: search, category, brand, maximum price, minimum discount, stock, saved items
 - Shopping list with quantities, total and total savings
 - CSV export and copy-to-share text
