@@ -161,7 +161,7 @@ footer .h{color:var(--ac)}
       <p class="lead">Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans.</p>
       <div class="cta">
         <a class="btn pri" id="bm" href="__BOOKMARKLET__" data-loader="__LOADER__" title="Drag me to your bookmarks bar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7.2 8 11l3.5-3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13.8h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>PriceDrop Hunter</a>
-        <button class="btn out" id="demo" type="button"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 4 13 8-13 8z"/></svg>Try the demo</button>
+        <a class="btn out" href="https://blinkit.com/" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>Open Blinkit</a>
       </div>
       <p class="hint">Drag the button to your bookmarks bar. On a phone? <button id="copy" type="button">Copy the code</button></p>
     </div>
@@ -259,7 +259,7 @@ footer .h{color:var(--ac)}
     <details><summary>Is it official?</summary><p>No. It is an independent tool, not affiliated with Blinkit. It only reads what your account can already see.</p></details>
     <details><summary>Will it keep working?</summary><p>Blinkit can change its internal APIs at any time. The parser reads responses loosely to survive small changes, and the tool tells you when a scan returns nothing.</p></details>
     <details><summary>How does price-drop tracking work?</summary><p>After each scan the tool remembers every price in your browser. Next time, new products are labelled New and cheaper ones Price drop.</p></details>
-    <details><summary>Can I try it first?</summary><p>Yes. Press <b>Try the demo</b> at the top to explore the full interface with sample data.</p></details>
+    <details><summary>Where does the data come from?</summary><p>Live from Blinkit, inside your own logged-in tab and for your delivery address. Nothing is stored on any server; saved items and price history stay in your browser.</p></details>
   </div>
 </div></section>
 
@@ -278,7 +278,6 @@ footer .h{color:var(--ac)}
   document.getElementById('copy').onclick=function(){copy('Mobile loader copied. Paste it as a bookmark address.',null,null,ld)};
   document.getElementById('copyloader').onclick=function(e){copy('Mobile loader copied',e.currentTarget,'Copy mobile loader',ld)};
   document.getElementById('copycode').onclick=function(e){copy('Full code copied',e.currentTarget,'Copy full code')};
-  document.getElementById('demo').onclick=function(){window.__BDS_DEMO__=true;var s=document.createElement('script');s.src='dist/deals.js';document.body.appendChild(s)};
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){document.querySelectorAll('.tabs button').forEach(function(x){x.classList.toggle('on',x===b)});document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('on',p.id===b.dataset.t)})}});
   var root=document.documentElement,th=document.getElementById('theme');
   function dark(){var s=null;try{s=localStorage.getItem('pdh_theme')}catch(e){}return s?s==='dark':matchMedia('(prefers-color-scheme:dark)').matches}

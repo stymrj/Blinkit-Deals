@@ -27,8 +27,6 @@ Sweeps Blinkit through keyword searches and collection listings, ranks products 
 
 **Userscript.** Install `dist/blinkit-deals.user.js` in Tampermonkey or Violentmonkey. A small Deals button appears on every blinkit.com page.
 
-**Demo.** Use "Try the demo" on the install page to explore the interface with sample data.
-
 ## Keyboard shortcuts
 
 `/` search, `S` scan or stop, `Esc` close.

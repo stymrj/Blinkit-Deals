@@ -1,7 +1,6 @@
 /*!
  * PriceDrop Hunter for Blinkit
  * Runs in your own browser session as a bookmarklet or userscript.
- * Demo mode (sample data) is used on any other site.
  */
 (function () {
   'use strict';
@@ -111,7 +110,8 @@
   <label class="row" style="margin-bottom:8px"><span>Longitude</span><input class="fld" style="width:120px" data-in="lon" placeholder="auto" value="${e(st.lon)}" inputmode="decimal"></label>`,
     locInput: (k, v) => { if (k === 'lat' || k === 'lon') { store[k] = v.replace(/[^\d.\-]/g, '').slice(0, 12); save(); return true; } return false; }
   };
-  const DEMO = !!window.__BDS_DEMO__ || !P.hostRe.test(location.hostname);
+  // Live data can only be read from the store's own site, inside your logged-in tab.
+  const OFFSITE = !P.hostRe.test(location.hostname);
 
   const KEY = P.key;
   const defaults = Object.assign({
@@ -122,39 +122,6 @@
   try { store = Object.assign({}, defaults, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { store = Object.assign({}, defaults); }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* quota/private mode */ } };
 
-  // ───────────────────────── Demo data ─────────────────────────
-  function demoFetch(groupId, subName, page) {
-    let seed = 0; const key = groupId + subName + page;
-    for (let i = 0; i < key.length; i++) seed = (seed * 31 + key.charCodeAt(i)) >>> 0;
-    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
-    const brands = ['Amul', 'Tata', 'Nestlé', 'Britannia', 'Aashirvaad', 'Fortune', 'Haldiram', 'Dabur', 'Surf', 'Maggi', 'Cadbury', 'Pepsi', 'Real', 'Godrej', 'Patanjali', 'Lays'];
-    const words = ['Premium', 'Classic', 'Value Pack', 'Family Pack', 'Fresh', 'Organic', 'Combo', 'Select', 'Mega Pack'];
-    const g = GROUPS.find(x => x.id === groupId) || GROUPS[0];
-    const items = [];
-    const n = page > 2 ? 4 : 12;
-    for (let i = 0; i < n; i++) {
-      const mrp = Math.round(40 + rnd() * 900);
-      const disc = Math.round(8 + rnd() * rnd() * 70 + (rnd() < 0.05 ? 15 : 0));
-      const sell = Math.max(5, Math.round(mrp * (1 - disc / 100)));
-      const brand = brands[Math.floor(rnd() * brands.length)];
-      const hue = Math.floor(rnd() * 360);
-      const kind = Math.floor(rnd() * 4), sat = `hsl(${hue},62%,52%)`, dk = `hsl(${hue},55%,34%)`, bg = `hsl(${(hue + 30) % 360},45%,93%)`;
-      const shape = [
-        `<rect x='68' y='46' width='104' height='156' rx='8' fill='${sat}'/><rect x='68' y='46' width='104' height='22' rx='8' fill='${dk}'/>`,
-        `<rect x='104' y='34' width='32' height='26' rx='4' fill='${dk}'/><rect x='80' y='58' width='80' height='148' rx='26' fill='${sat}'/>`,
-        `<path d='M72 58h96l10 140q-58 14-116 0z' fill='${sat}'/><rect x='72' y='50' width='96' height='14' rx='3' fill='${dk}'/>`,
-        `<rect x='78' y='60' width='84' height='24' rx='6' fill='${dk}'/><rect x='70' y='82' width='100' height='120' rx='18' fill='${sat}'/>`
-      ][kind];
-      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><rect width='240' height='240' fill='${bg}'/><ellipse cx='120' cy='210' rx='60' ry='8' fill='rgba(0,0,0,.08)'/>${shape}<rect x='82' y='118' width='76' height='40' rx='6' fill='#fff'/><text x='120' y='144' font-family='Arial,sans-serif' font-weight='700' font-size='14' fill='${dk}' text-anchor='middle'>${brand.slice(0, 9)}</text></svg>`;
-      items.push({
-        id: `${groupId}-${subName}-${page}-${i}`, title: `${brand} ${subName} ${words[Math.floor(rnd() * words.length)]} ${[100, 250, 500, 1000][Math.floor(rnd() * 4)]}g`,
-        brand, price: sell, mrp, disc: sell < mrp ? Math.round((mrp - sell) / mrp * 100) : 0, save: mrp - sell,
-        img: 'data:image/svg+xml;utf8,' + encodeURIComponent(svg), url: '#demo', inStock: rnd() > 0.12, cat: g.name + ' › ' + subName
-      });
-    }
-    return items;
-  }
-
   // ───────────────────────── State ─────────────────────────
   const S = { products: new Map(), scanning: false, done: 0, total: 0, errors: 0, ctl: { stop: false },
     q: '', brand: '', cat: '', preset: '', favOnly: false, newOnly: false, shown: 60, tab: 'deals', panel: false, startedAt: 0 };
@@ -162,7 +129,8 @@
   // ───────────────────────── Scanner ─────────────────────────
   async function scan() {
     if (S.scanning) return;
-    if (typeof captureUI === 'function' && !DEMO) { autoScroll(); return; }
+    if (OFFSITE) { toast('Open ' + PLATFORM + ' to fetch live deals.'); return; }
+    if (typeof captureUI === 'function') { autoScroll(); return; }
     const jobs = P.jobs(store);
     if (!jobs.length) { toast('Pick at least one category'); return; }
     S.scanning = true; S.ctl = { stop: false }; S.done = 0; S.errors = 0; S.total = jobs.length; S.startedAt = Date.now();
@@ -173,9 +141,7 @@
         const job = queue.shift();
         try {
           for (let page = 1; page <= store.depth && !ctl.stop; page++) {
-            let items;
-            if (DEMO) { await sleep(120 + Math.random() * 260); items = demoFetch(job.g.id, job.name, page); }
-            else items = await P.fetchPage(job, page, ctl);
+            const items = await P.fetchPage(job, page, ctl);
             const fresh = ingest(items);
             scheduleRender();
             if (fresh < 3) break;
@@ -264,6 +230,7 @@
 
   // ───────────────────────── UI ─────────────────────────
   const PLATFORM = 'Blinkit';
+  const STORE_URL = 'https://blinkit.com/';
   const host = document.createElement('div');
   host.id = 'fkm-host';
   host.style.cssText = 'all:initial;position:fixed;inset:0;z-index:2147483647;display:none';
@@ -309,7 +276,7 @@ header{display:flex;align-items:center;gap:10px;padding:0 18px;height:68px;flex:
 .logo .mk{width:38px;height:38px;border-radius:11px;background:var(--ac);color:var(--on);display:grid;place-items:center;flex:none}
 .logo b{display:block;font-weight:800;font-size:16px;letter-spacing:-.3px;line-height:1.15}
 .logo small{display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px;opacity:.82;line-height:1.3}
-.demo{font-size:10.5px;font-weight:800;background:rgba(255,255,255,.2);border-radius:5px;padding:0 6px;letter-spacing:.03em;text-transform:uppercase}
+.flag{font-size:10.5px;font-weight:800;background:rgba(255,255,255,.2);border-radius:5px;padding:0 6px;letter-spacing:.03em;text-transform:uppercase}
 .search{flex:1;max-width:540px;min-width:140px;position:relative;display:flex;align-items:center}
 .search .i{position:absolute;left:13px;color:#7a808c;pointer-events:none}
 .search input{width:100%;height:42px;border:0;border-radius:12px;padding:0 44px 0 40px;background:#fff;color:#111;outline:0;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
@@ -477,7 +444,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   }
   function sidebar() {
     return `<aside class="${sideOpen ? 'open' : ''}">
- ${typeof captureUI === 'function' && !DEMO ? captureUI() : scanUI()}
+ ${typeof captureUI === 'function' && !OFFSITE ? captureUI() : scanUI()}
  <div><h4>${ic('sliders', 15)}Filters</h4>
   <label class="row"><span>Min discount</span><b>${store.minDisc}%</b></label><input type="range" min="0" max="90" step="5" value="${store.minDisc}" data-in="minDisc">
   <label class="row" style="margin-top:14px"><span>Max price</span><b>${store.maxPrice ? $inr(store.maxPrice) : 'Any'}</b></label><input type="range" min="0" max="2000" step="50" value="${store.maxPrice}" data-in="maxPrice">
@@ -506,9 +473,13 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
       const at = store.favAt[p.id], d = at ? at - p.price : 0;
       if (d > 0) cheaper++;
       const tag = d > 0 ? `<em class="dn">↓ ${$inr(d)} since saved</em>` : d < 0 ? `<em class="upx">↑ ${$inr(-d)} since saved</em>` : '<em class="eq">Same as when saved</em>';
-      return `<a class="mini" ${p.url && p.url !== '#demo' ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}><img src="${esc(p.img)}" alt=""><div><span class="ti">${esc(p.title)}</span><b>${$inr(p.price)}</b> · ${p.disc}% off<br>${tag}</div></a>`;
+      return `<a class="mini" ${p.url ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}><img src="${esc(p.img)}" alt=""><div><span class="ti">${esc(p.title)}</span><b>${$inr(p.price)}</b> · ${p.disc}% off<br>${tag}</div></a>`;
     }).join('');
     return `<div class="watch"><div class="wh"><b>${ic('heart', 16)}Saved items</b><span>${cheaper ? cheaper + ' cheaper than when you saved them' : saved.length + ' found in this scan'}</span></div><div class="wl">${minis}</div></div>`;
+  }
+  function offsiteCard() {
+    const host = STORE_URL.replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
+    return `<div class="check"><h3>Open ${esc(PLATFORM)} to see live deals</h3><p class="note" style="font-size:14px">PriceDrop Hunter reads live prices from ${esc(PLATFORM)} inside your own logged-in tab, so it can only fetch data on ${esc(host)}. Open the store, set your delivery address, then click your PriceDrop Hunter bookmark there.</p><a class="btn" href="${STORE_URL}" target="_blank" rel="noopener" style="margin-top:16px;text-decoration:none">${ic('ext')}Open ${esc(PLATFORM)}</a></div>`;
   }
   function checklist() {
     const capture = typeof captureUI === 'function';
@@ -527,7 +498,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
  <div class="im" style="background-image:url('${esc(String(p.img).replace(/'/g, '%27'))}')">
   <span class="dc ${p.disc >= 60 ? 'hot' : ''}">${p.disc}% OFF</span>${p.isNew ? '<span class="tg">New</span>' : p.lowEver ? `<span class="tg low">${ic('star', 11)}Lowest ever</span>` : p.was ? `<span class="tg">${ic('arrowdown', 11)}Price drop</span>` : ''}
   <button class="fv ${fav ? 'on' : ''}" data-act="fav" data-id="${esc(p.id)}" title="${fav ? 'Saved' : 'Save'}">${ic('heart', 17)}</button></div>
- <div class="inf"><a class="ti" ${p.url && p.url !== '#demo' ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}>${esc(p.title)}</a>
+ <div class="inf"><a class="ti" ${p.url ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}>${esc(p.title)}</a>
   <div class="ct">${esc(p.cat)}</div>
   <div class="pr"><b>${$inr(p.price)}</b><s>${$inr(p.mrp)}</s></div>
   <div class="sv">Save ${$inr(p.save)}${p.inStock ? '' : ' · <i>Out of stock</i>'}</div>
@@ -548,7 +519,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   <div class="st hl"><b>${list.length}</b><span>deals of ${S.products.size} products</span></div>
   <div class="st"><b>${avg}%</b><span>average discount</span></div>
   <div class="st"><b>${$inr(best)}</b><span>biggest saving</span></div>
-  <div class="st"><b>${when}</b><span>${S.scanning ? 'scanning' : store.auto && !DEMO ? 'updated · auto every ' + store.auto + ' min' : 'last updated'}</span></div>
+  <div class="st"><b>${when}</b><span>${S.scanning ? 'scanning' : store.auto && !OFFSITE ? 'updated · auto every ' + store.auto + ' min' : 'last updated'}</span></div>
  </div>
  <div class="presets">${Object.entries(PRESETS).map(([k, v]) => `<button class="chip ${S.preset === k ? 'on' : ''}" data-act="preset" data-id="${k}">${v[0]}</button>`).join('')}</div>
  ${watchStrip()}
@@ -561,7 +532,8 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
  </div>
  ${list.length ? `<div class="grid ${store.view}">${list.slice(0, S.shown).map(p => card(p, fav.has(p.id), store.list)).join('')}</div>
    ${list.length > S.shown ? `<div style="text-align:center;margin-top:24px"><button class="btn ghost" data-act="more">Show more (${list.length - S.shown} left)</button></div>` : ''}`
-        : !DEMO && !S.products.size && !S.scanning ? checklist()
+        : OFFSITE ? offsiteCard()
+        : !S.products.size && !S.scanning ? checklist()
         : `<div class="empty"><span class="ei">${ic(S.scanning ? 'scan' : 'tag', 26)}</span><b>${S.scanning ? 'Looking for deals…' : S.products.size ? 'Nothing matches these filters' : 'No deals yet'}</b>${S.scanning ? 'Results appear here as they come in.' : S.products.size ? 'Try lowering the minimum discount.' : 'Pick categories on the left and press Scan deals.'}</div>`}
 </main>`;
   }
@@ -580,10 +552,10 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     const focused = root.activeElement && root.activeElement.dataset ? root.activeElement.dataset.in : null;
     const count = Object.values(store.list).reduce((a, b) => a + b, 0);
     const pct = S.total ? Math.round(S.done / S.total * 100) : 0;
-    const capture = typeof captureUI === 'function' && !DEMO;
+    const capture = typeof captureUI === 'function' && !OFFSITE;
     app.className = 'app' + (dark ? ' dark' : '');
     app.innerHTML = `<header><button class="ib menu-btn" data-act="side" title="Menu">${ic('menu')}</button>
- <div class="logo"><span class="mk">${ic('arrowdown', 20)}</span><div><b>PriceDrop Hunter</b><small>${esc(PLATFORM)}${DEMO ? '<span class="demo">Demo</span>' : ''}</small></div></div>
+ <div class="logo"><span class="mk">${ic('arrowdown', 20)}</span><div><b>PriceDrop Hunter</b><small>${esc(PLATFORM)}${OFFSITE ? '<span class="flag">Not on store</span>' : ''}</small></div></div>
  <label class="search">${ic('search', 17)}<input data-in="q" placeholder="Search products or brands" value="${esc(S.q)}"><kbd>/</kbd></label><span class="sp"></span>
  ${capture ? '' : S.scanning ? `<button class="sb stop" data-act="stop">${ic('stop', 16)}<span class="lb">Stop</span></button>` : `<button class="sb" data-act="scan">${ic('scan', 16)}<span class="lb">Scan</span></button>`}
  <button class="ib" data-act="bell" title="Telegram alerts ${store.tg.on ? 'on' : 'off'}">${ic('bell')}<span class="dot ${store.tg.on && tgReady() ? 'on' : ''}"></span></button>
@@ -607,7 +579,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     catch (e) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast(msg || 'Copied'); }
   }
   function listText() {
-    const lines = Object.entries(store.list).map(([id, q]) => { const p = S.products.get(id) || (store._cache && store._cache[id]); return p ? `- ${p.title} x${q}: ${$inr(p.price * q)}${p.url && p.url !== '#demo' ? '\n  ' + p.url : ''}` : null; }).filter(Boolean);
+    const lines = Object.entries(store.list).map(([id, q]) => { const p = S.products.get(id) || (store._cache && store._cache[id]); return p ? `- ${p.title} x${q}: ${$inr(p.price * q)}${p.url ? '\n  ' + p.url : ''}` : null; }).filter(Boolean);
     return lines.join('\n');
   }
   // Add products from any source (scan, passive capture) with price-history flags.
@@ -648,9 +620,9 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     catch (e) { throw new Error('this site blocks direct requests to Telegram. Use the userscript version for alerts.'); }
     if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.description || 'HTTP ' + r.status); }
   }
-  const tgLine = p => `<b>${p.disc}% off</b> · ${esc(p.title.slice(0, 90))}\n${$inr(p.price)} <s>${$inr(p.mrp)}</s>${p.was ? ' · was ' + $inr(p.was) : ''}${p.url && p.url !== '#demo' ? `\n<a href="${esc(p.url)}">Open on ${esc(PLATFORM)}</a>` : ''}`;
+  const tgLine = p => `<b>${p.disc}% off</b> · ${esc(p.title.slice(0, 90))}\n${$inr(p.price)} <s>${$inr(p.mrp)}</s>${p.was ? ' · was ' + $inr(p.was) : ''}${p.url ? `\n<a href="${esc(p.url)}">Open on ${esc(PLATFORM)}</a>` : ''}`;
   async function notify() {
-    if (DEMO || !store.tg.on || !tgReady()) return;
+    if (OFFSITE || !store.tg.on || !tgReady()) return;
     const fav = new Set(store.favs), out = [];
     S.products.forEach(p => {
       if (!p.inStock) return;
@@ -677,7 +649,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   }
   // Auto-scan while this tab stays open (the panel can be closed).
   setInterval(() => {
-    if (!+store.auto || S.scanning || DEMO || typeof captureUI === 'function') return;
+    if (!+store.auto || S.scanning || OFFSITE || typeof captureUI === 'function') return;
     if (Date.now() - (store.lastScan || 0) >= store.auto * 60000) scan();
   }, 30000);
 
@@ -742,8 +714,8 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
       case 'dec': if (--store.list[id] <= 0) delete store.list[id]; save(); render(); break;
       case 'clearlist': store.list = {}; save(); render(); break;
       case 'copylist': copy(listText() || 'Empty list', 'List copied'); break;
-      case 'openlinks': Object.keys(store.list).map(i => S.products.get(i)).filter(p => p && p.url && p.url !== '#demo').forEach(p => window.open(p.url, '_blank', 'noopener')); break;
-      case 'copyall': copy(filtered().slice(0, 20).map(p => `${p.disc}% off · ${p.title} · ${$inr(p.price)} (MRP ${$inr(p.mrp)})${p.url && p.url !== '#demo' ? '\n' + p.url : ''}`).join('\n'), 'Top 20 deals copied'); break;
+      case 'openlinks': Object.keys(store.list).map(i => S.products.get(i)).filter(p => p && p.url).forEach(p => window.open(p.url, '_blank', 'noopener')); break;
+      case 'copyall': copy(filtered().slice(0, 20).map(p => `${p.disc}% off · ${p.title} · ${$inr(p.price)} (MRP ${$inr(p.mrp)})${p.url ? '\n' + p.url : ''}`).join('\n'), 'Top 20 deals copied'); break;
       case 'csv': {
         const rows = [['Title', 'Brand', 'Category', 'Price', 'MRP', 'Discount %', 'Saving', 'In stock', 'URL']].concat(filtered().map(p => [p.title, p.brand, p.cat, p.price, p.mrp, p.disc, p.save, p.inStock, p.url]));
         const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
@@ -772,6 +744,5 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   window.__BDS__ = api;
   document.body.appendChild(host);
   api.show();
-  if (typeof P !== 'undefined' && P.install && !DEMO) P.install(ingest);
-  if (DEMO && !S.products.size) setTimeout(scan, 300);
+  if (typeof P !== 'undefined' && P.install && !OFFSITE) P.install(ingest);
 })();
