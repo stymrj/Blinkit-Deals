@@ -117,8 +117,9 @@ async function run(platform, argv = process.argv.slice(2)) {
         return;
       }
       for (const p of items) { if (!found.has(p.id) || job.min < found.get(p.id).min) found.set(p.id, Object.assign(p, { min: job.min })); }
-      if (items.length < (platform.pageSize || 10)) break;
-      if (items[items.length - 1].disc < job.min) break; // sorted by discount
+      if (items.more === false || !items.length) break;
+      // Only stores that return results sorted by discount can stop early.
+      if (platform.sortedByDiscount && (items.length < (platform.pageSize || 10) || items[items.length - 1].disc < job.min)) break;
     }
   });
   if (blocked) console.error('Stopped: ' + blocked);

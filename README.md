@@ -1,11 +1,13 @@
 # PriceDrop Hunter for Blinkit
 
-Sweeps Blinkit through keyword searches and collection listings, ranks products by real savings, and tracks price changes between scans. It runs in your own browser as a bookmarklet or userscript. Nothing is uploaded and there is no account.
+Sweeps Blinkit keywords and collections by itself and opens with the biggest discounts, then the best deals of each group. It runs in your own browser as a bookmarklet or userscript. Nothing is uploaded and there is no account.
 
 **Live page:** https://stymrj.github.io/Blinkit-Deals/
 
 ## Features
 
+- Opens with the biggest discounts, across every category, scanned by itself
+- Best deals of each category in one swipeable row, with See all
 - Ranks by percent off and rupees saved together
 - Labels products that are new, cheaper than last time, or at their lowest price ever
 - Price history sparkline on every product you have seen before
@@ -151,12 +153,12 @@ A session cookie works like your password for that site. Keep it only in GitHub 
 
 ## How it gets data
 
-Uses Blinkit's own web endpoints (`/v1/layout/search` and `/v1/layout/listing_widgets`) from your logged-in session. Latitude and longitude are read from the page, or entered in the sidebar.
+Uses Blinkit's own web endpoints (`/v1/layout/search` and `/v1/layout/listing_widgets`, sorted by discount) from your tab, with the delivery coordinates Blinkit saved. Requests are paced (two at a time, short random pauses, back-off on HTTP 429) because Blinkit rate-limits bursts.
 
 ## Limitations
 
-- Prices and stock depend on your local store.
-- The three collection groups use best-effort request bodies; the keyword groups are the primary path.
+- Prices and stock depend on your local Blinkit store.
+- A full scan takes about a minute because of the pacing; deals appear as they arrive.
 - The endpoints are undocumented and can change.
 
 ## Project layout

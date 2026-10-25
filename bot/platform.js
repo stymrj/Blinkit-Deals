@@ -32,7 +32,8 @@ function extract(json, cat, ctx) {
 module.exports = {
   label: 'Blinkit',
   required: ['BLINKIT_LAT', 'BLINKIT_LON'],
-  workers: 3,
+  workers: 2,
+  sortedByDiscount: true,
   pageSize: 15,
   async fetchPage(job, page, ctx) {
     const { env, fetch, sleep } = ctx;
@@ -45,14 +46,15 @@ module.exports = {
       url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(code) + '&search_type=type_to_search&page_index=' + pi + '&offset=' + offset + '&limit=15&oos_visibility=true&sort=discount_desc';
       body = { query: code, q: code, search_query: code, page_index: pi, offset: String(offset), limit: '15', oos_visibility: true, sort: 'discount_desc' };
     }
-    await sleep(300 + Math.random() * 500);
-    for (let a = 0; a < 3; a++) {
+    await sleep(350 + Math.random() * 450); // Blinkit rate-limits bursts hard
+    for (let a = 0; a < 5; a++) {
       const r = await fetch(url, {
         method: 'POST', body: JSON.stringify(body),
         headers: { 'content-type': 'application/json', accept: '*/*', app_client: 'consumer_web', lat: env.BLINKIT_LAT, lon: env.BLINKIT_LON, 'user-agent': UA, origin: 'https://blinkit.com', referer: 'https://blinkit.com/', ...(env.BLINKIT_COOKIE ? { cookie: env.BLINKIT_COOKIE } : {}) }
       });
       if (r.status === 403) throw Object.assign(new Error('Blinkit blocked this machine (HTTP 403). GitHub-hosted runners are often blocked; use a self-hosted runner (see README).'), { blocked: true });
-      if (r.status === 429 || r.status >= 500) { await sleep(2000 * (a + 1)); continue; }
+      if (r.status === 429) { await sleep(2500 * (a + 1) + Math.random() * 1000); continue; }
+      if (r.status >= 500) { await sleep(2000 * (a + 1)); continue; }
       if (!r.ok) return [];
       return extract(await r.json(), job.g.name + ' › ' + job.sub[1], ctx);
     }
