@@ -141,8 +141,8 @@ footer .h{color:var(--ac)}
 .bub s{color:#8a94a0}.bub a{color:#2481cc;text-decoration:none}
 .bub .tm{display:block;text-align:right;font-size:11px;color:#8a94a0;margin-top:4px}
 @media(max-width:900px){#install .ins{padding:22px;margin-top:-50px}.tgrid{grid-template-columns:1fr;gap:32px}}
-.phone{display:none}
-@media(max-width:700px){.desk{display:none!important}.phone{display:inline-flex}p.phone{display:block}}
+.onph{display:none}
+@media(max-width:700px){.ondesk{display:none!important}.onph{display:inline-flex}p.onph{display:block}}
 @media(max-width:900px){
  .hgrid{grid-template-columns:1fr;gap:40px;padding:16px 0 120px}.mock{transform:none}
  .links a{display:none}.stats{grid-template-columns:1fr;gap:12px}.stats b{font-size:36px}
@@ -164,12 +164,12 @@ footer .h{color:var(--ac)}
       <h1>The best Blinkit deals, <span>found in seconds.</span></h1>
       <p class="lead">Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans.</p>
       <div class="cta">
-        <button class="btn pri phone" id="copym" type="button"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>Copy for your phone</button>
-        <a class="btn pri desk" id="bm" href="__BOOKMARKLET__" data-loader="__LOADER__" title="Drag me to your bookmarks bar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7.2 8 11l3.5-3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13.8h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>PriceDrop Hunter</a>
+        <button class="btn pri onph" id="copym" type="button"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>Copy for your phone</button>
+        <a class="btn pri ondesk" id="bm" href="__BOOKMARKLET__" data-loader="__LOADER__" title="Drag me to your bookmarks bar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7.2 8 11l3.5-3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13.8h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>PriceDrop Hunter</a>
         <a class="btn out" href="https://blinkit.com/#pricedrop" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>Open Blinkit</a>
       </div>
-      <p class="hint desk">Drag the button to your bookmarks bar. On a phone? <button id="copy" type="button">Copy the code</button></p>
-      <p class="hint phone">Then bookmark any page, edit the bookmark and paste this as its address. On blinkit.com, type <b>PriceDrop</b> in the address bar and tap the bookmark.</p>
+      <p class="hint ondesk">Drag the button to your bookmarks bar. On a phone? <button id="copy" type="button">Copy the code</button></p>
+      <p class="hint onph">Then bookmark any page, edit the bookmark and paste this as its address. On blinkit.com, type <b>PriceDrop</b> in the address bar and tap the bookmark.</p>
     </div>
     <div class="mock" aria-hidden="true">
       <div class="mh"><i></i>PriceDrop Hunter<span></span></div>
