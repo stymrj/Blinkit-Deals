@@ -58,14 +58,15 @@ textarea{width:100%;height:90px;border:1px solid var(--bd);border-radius:10px;ba
       <div><b>Remembers you</b><span>Pincode, filters, favourites and theme persist.</span></div>
     </div>
   </div>
-  <div class="card"><h2>Bookmarklet code</h2><textarea id="code" readonly></textarea></div>
+  <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px"><h2 style="margin:0">Bookmarklet code</h2><button id="copycode" style="background:var(--pr);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:700 14px inherit;font-family:inherit;cursor:pointer">⧉ Copy code</button></div><textarea id="code" readonly></textarea></div>
 </div>
 <footer style="text-align:center;padding:0 16px 40px;color:var(--mt)">Made with ❤️ by <b>Satyam Raj</b> · <a href="https://www.linkedin.com/in/satyamraj1" target="_blank" rel="noopener" style="color:var(--pr);text-decoration:none;font-weight:600">LinkedIn</a></footer>
 <script>
 const bm=document.getElementById('bm').getAttribute('href');
 document.getElementById('code').value=bm;
 document.getElementById('copy').onclick=async e=>{try{await navigator.clipboard.writeText(bm);e.target.textContent='✓ Copied'}catch(_){const t=document.getElementById('code');t.select();document.execCommand('copy');e.target.textContent='✓ Copied'}};
-document.getElementById('demo').onclick=()=>{window.__BDS_DEMO__=true;const s=document.createElement('script');s.src='dist/deals.js';document.body.appendChild(s)};
+document.getElementById("copycode").onclick=async e=>{const b=e.currentTarget,t=document.getElementById("code");try{await navigator.clipboard.writeText(bm)}catch(_){t.select();document.execCommand("copy")}b.textContent="✓ Copied!";setTimeout(()=>b.textContent="⧉ Copy code",1800)};
+$&=()=>{window.__BDS_DEMO__=true;const s=document.createElement('script');s.src='dist/deals.js';document.body.appendChild(s)};
 </script>
 </body>
 </html>
