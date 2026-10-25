@@ -149,7 +149,8 @@
           const items = await P.fetchPage(job, page, ctl);
           const fresh = ingest(items);
           scheduleRender();
-          if (!fresh || items.more === false) break;
+          // Stop on the last page, or when a page adds nothing and does not promise more.
+          if (items.more === false || (!fresh && items.more !== true)) break;
         }
       } catch (e) { if (!ctl.stop) S.errors++; }
       S.done++; scheduleRender();
