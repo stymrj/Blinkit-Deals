@@ -2,6 +2,8 @@
 // Usage: node build.js   (uses terser if available via npx, else ships unminified)
 const fs = require('fs'), path = require('path'), { execSync } = require('child_process');
 const PAGES = 'https://stymrj.github.io/Blinkit-Deals/';
+// Some stores block fetching code from other sites; there the "mobile" copy is the full bookmarklet.
+const LOADER_OK = true;
 const src = path.join(__dirname, 'src/deals.js');
 let code = fs.readFileSync(src, 'utf8');
 // The stylesheet is a template string, so terser leaves it alone: squeeze its whitespace first.
@@ -17,7 +19,7 @@ try {
 const toUrl = js => 'javascript:' + js.replace(/%/g, '%25').replace(/#/g, '%23').replace(/\r?\n/g, '%0A');
 const bookmarklet = toUrl('(function(){' + code + '})()');
 // Mobile loader: a few hundred characters that fetch the latest build from GitHub Pages.
-const loader = toUrl("(function(){if(window.__BDS__)return window.__BDS__.toggle();fetch('" + PAGES + "dist/deals.js?'+Date.now()).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.text()}).then(function(t){(0,eval)(t)}).catch(function(e){alert('PriceDrop Hunter could not load: '+e.message+'. Try the full bookmarklet or the userscript.')})})()");
+const loader = !LOADER_OK ? bookmarklet : toUrl("(function(){if(window.__BDS__)return window.__BDS__.toggle();fetch('" + PAGES + "dist/deals.js?'+Date.now()).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.text()}).then(function(t){(0,eval)(t)}).catch(function(e){alert('PriceDrop Hunter could not load: '+e.message+'. Try the full bookmarklet or the userscript.')})})()");
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'dist/bookmarklet.txt'), bookmarklet);
 fs.writeFileSync(path.join(__dirname, 'dist/loader.txt'), loader);
