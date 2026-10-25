@@ -80,19 +80,22 @@
       body = { offset: String(offset), limit: '15', collection_uuid: job.uuid, collection_group_id: job.gid, page_index: pi, oos_visibility: true, sort: 'discount_desc' };
     }
     let lastErr;
-    for (let a = 0; a < 3; a++) {
+    await sleep(350 + Math.random() * 450); // Blinkit rate-limits bursts hard
+    for (let a = 0; a < 5; a++) {
       if (ctl.stop) throw new Error('stopped');
       try {
         const r = await W.fetch(url, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', accept: '*/*', app_client: 'consumer_web', lat: String(lat), lon: String(lon) }, body: JSON.stringify(body) });
-        if (r.status === 429 || r.status >= 500) throw new Error('HTTP ' + r.status);
+        if (r.status === 429) { await sleep(2500 * (a + 1) + Math.random() * 1000); continue; }
+        if (r.status >= 500) throw new Error('HTTP ' + r.status);
         if (!r.ok) { noLoc = true; return []; }
         return extract(await r.json(), job.g.name + ' › ' + job.name);
       } catch (e) { lastErr = e; await sleep(700 * (a + 1)); }
     }
-    throw lastErr;
+    throw lastErr || new Error('rate limited');
   }
   const P = {
     key: 'bds_v1', hostRe: /(^|\.)blinkit\.com$/,
+    workers: 2,
     defaults: { groups: ['grocery', 'snacks', 'dairy'], lat: '', lon: '', depth: 3 },
     jobs: st => {
       const jobs = [];
