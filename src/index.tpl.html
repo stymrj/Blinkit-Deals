@@ -160,7 +160,7 @@ footer .h{color:var(--ac)}
       <h1>The best Blinkit deals, <span>found in seconds.</span></h1>
       <p class="lead">Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans.</p>
       <div class="cta">
-        <a class="btn pri" id="bm" href="__BOOKMARKLET__" title="Drag me to your bookmarks bar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7.2 8 11l3.5-3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13.8h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>PriceDrop Hunter</a>
+        <a class="btn pri" id="bm" href="__BOOKMARKLET__" data-loader="__LOADER__" title="Drag me to your bookmarks bar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7.2 8 11l3.5-3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13.8h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>PriceDrop Hunter</a>
         <button class="btn out" id="demo" type="button"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 4 13 8-13 8z"/></svg>Try the demo</button>
       </div>
       <p class="hint">Drag the button to your bookmarks bar. On a phone? <button id="copy" type="button">Copy the code</button></p>
@@ -187,7 +187,7 @@ footer .h{color:var(--ac)}
       <li>Open <code>blinkit.com</code>, set your delivery address, then click the bookmark.</li>
     </ol></div>
     <div class="panel" id="p2"><ol>
-      <li>Tap <b>Copy code</b> below.</li>
+      <li>Tap <b>Copy mobile loader</b> below. It is a short bookmark that loads the latest version from this site, so it fits on any phone.</li>
       <li>Bookmark any page, then edit it: name it <code>PriceDrop</code> and paste the code as the address.</li>
       <li>On <code>blinkit.com</code>, type <code>PriceDrop</code> in the address bar and tap the bookmark.</li>
     </ol></div>
@@ -196,7 +196,7 @@ footer .h{color:var(--ac)}
       <li>Add a new script with the contents of <code>dist/blinkit-deals.user.js</code>.</li>
       <li>A <b>Deals</b> button now sits on every blinkit.com page. Recommended if you want Telegram alerts.</li>
     </ol></div>
-    <div class="code"><div class="hh"><h3>Bookmarklet code</h3><button class="btn small" id="copycode" type="button"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><span>Copy code</span></button></div><textarea id="code" readonly aria-label="Bookmarklet code"></textarea></div>
+    <div class="code"><div class="hh"><h3>Bookmarklet code</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="copyloader" type="button" style="background:var(--ac);color:var(--on)"><span>Copy mobile loader</span></button><button class="btn small" id="copycode" type="button"><svg class="ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><span>Copy full code</span></button></div></div><p class="note" style="color:var(--mt);font-size:14px;margin-top:8px">The full code works offline and needs nothing else. The mobile loader is a few hundred characters and fetches the latest version when you run it.</p><textarea id="code" readonly aria-label="Bookmarklet code"></textarea></div>
   </div>
 </div></section>
 
@@ -270,12 +270,13 @@ footer .h{color:var(--ac)}
 
 <script>
 (function(){
-  var bm=document.getElementById('bm').getAttribute('href');
+  var bm=document.getElementById('bm').getAttribute('href'),ld=document.getElementById('bm').getAttribute('data-loader');
   document.getElementById('code').value=bm;
   var tt;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('on')},2200)}
-  async function copy(msg,btn,orig){try{await navigator.clipboard.writeText(bm)}catch(_){var t=document.getElementById('code');t.select();document.execCommand('copy')}toast(msg);if(btn){var l=btn.querySelector('span')||btn;l.textContent='Copied';setTimeout(function(){l.textContent=orig},1600)}}
-  document.getElementById('copy').onclick=function(){copy('Code copied. Paste it as a bookmark address.')};
-  document.getElementById('copycode').onclick=function(e){copy('Code copied',e.currentTarget,'Copy code')};
+  async function copy(msg,btn,orig,txt){txt=txt||bm;try{await navigator.clipboard.writeText(txt)}catch(_){var t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}toast(msg);if(btn){var l=btn.querySelector('span')||btn;l.textContent='Copied';setTimeout(function(){l.textContent=orig},1600)}}
+  document.getElementById('copy').onclick=function(){copy('Mobile loader copied. Paste it as a bookmark address.',null,null,ld)};
+  document.getElementById('copyloader').onclick=function(e){copy('Mobile loader copied',e.currentTarget,'Copy mobile loader',ld)};
+  document.getElementById('copycode').onclick=function(e){copy('Full code copied',e.currentTarget,'Copy full code')};
   document.getElementById('demo').onclick=function(){window.__BDS_DEMO__=true;var s=document.createElement('script');s.src='dist/deals.js';document.body.appendChild(s)};
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){document.querySelectorAll('.tabs button').forEach(function(x){x.classList.toggle('on',x===b)});document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('on',p.id===b.dataset.t)})}});
   var root=document.documentElement,th=document.getElementById('theme');
