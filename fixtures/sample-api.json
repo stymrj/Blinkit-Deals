@@ -1,0 +1,1639 @@
+{
+  "response": {
+    "widgets": [
+      {
+        "data": {
+          "name": "Blinkit Test Product 1",
+          "normal_price": "₹100",
+          "mrp": {
+            "text": "₹200"
+          },
+          "product_id": 9000,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b0.jpg"
+          },
+          "is_sold_out": true
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 2"
+          },
+          "normal_price": {
+            "text": "₹98"
+          },
+          "mrp": {
+            "text": "₹201"
+          },
+          "product_id": 9001,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b1.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 3"
+          },
+          "normal_price": {
+            "text": "₹97"
+          },
+          "mrp": {
+            "text": "₹202"
+          },
+          "product_id": 9002,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b2.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 4"
+          },
+          "normal_price": {
+            "text": "₹95"
+          },
+          "mrp": {
+            "text": "₹203"
+          },
+          "product_id": 9003,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b3.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 5",
+          "normal_price": "₹94",
+          "mrp": {
+            "text": "₹204"
+          },
+          "product_id": 9004,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b4.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 6"
+          },
+          "normal_price": {
+            "text": "₹92"
+          },
+          "mrp": {
+            "text": "₹205"
+          },
+          "product_id": 9005,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b5.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 7"
+          },
+          "normal_price": {
+            "text": "₹91"
+          },
+          "mrp": {
+            "text": "₹206"
+          },
+          "product_id": 9006,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b6.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 8"
+          },
+          "normal_price": {
+            "text": "₹89"
+          },
+          "mrp": {
+            "text": "₹207"
+          },
+          "product_id": 9007,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b7.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 9",
+          "normal_price": "₹87",
+          "mrp": {
+            "text": "₹208"
+          },
+          "product_id": 9008,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b8.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 10"
+          },
+          "normal_price": {
+            "text": "₹86"
+          },
+          "mrp": {
+            "text": "₹209"
+          },
+          "product_id": 9009,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b9.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 11"
+          },
+          "normal_price": {
+            "text": "₹84"
+          },
+          "mrp": {
+            "text": "₹210"
+          },
+          "product_id": 9010,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b10.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 12"
+          },
+          "normal_price": {
+            "text": "₹82"
+          },
+          "mrp": {
+            "text": "₹211"
+          },
+          "product_id": 9011,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b11.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 13",
+          "normal_price": "₹81",
+          "mrp": {
+            "text": "₹212"
+          },
+          "product_id": 9012,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b12.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 14"
+          },
+          "normal_price": {
+            "text": "₹79"
+          },
+          "mrp": {
+            "text": "₹213"
+          },
+          "product_id": 9013,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b13.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 15"
+          },
+          "normal_price": {
+            "text": "₹77"
+          },
+          "mrp": {
+            "text": "₹214"
+          },
+          "product_id": 9014,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b14.jpg"
+          },
+          "is_sold_out": true
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 16"
+          },
+          "normal_price": {
+            "text": "₹75"
+          },
+          "mrp": {
+            "text": "₹215"
+          },
+          "product_id": 9015,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b15.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 17",
+          "normal_price": "₹73",
+          "mrp": {
+            "text": "₹216"
+          },
+          "product_id": 9016,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b16.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 18"
+          },
+          "normal_price": {
+            "text": "₹72"
+          },
+          "mrp": {
+            "text": "₹217"
+          },
+          "product_id": 9017,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b17.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 19"
+          },
+          "normal_price": {
+            "text": "₹70"
+          },
+          "mrp": {
+            "text": "₹218"
+          },
+          "product_id": 9018,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b18.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 20"
+          },
+          "normal_price": {
+            "text": "₹68"
+          },
+          "mrp": {
+            "text": "₹219"
+          },
+          "product_id": 9019,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b19.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 21",
+          "normal_price": "₹66",
+          "mrp": {
+            "text": "₹220"
+          },
+          "product_id": 9020,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b20.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 22"
+          },
+          "normal_price": {
+            "text": "₹64"
+          },
+          "mrp": {
+            "text": "₹221"
+          },
+          "product_id": 9021,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b21.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 23"
+          },
+          "normal_price": {
+            "text": "₹62"
+          },
+          "mrp": {
+            "text": "₹222"
+          },
+          "product_id": 9022,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b22.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 24"
+          },
+          "normal_price": {
+            "text": "₹60"
+          },
+          "mrp": {
+            "text": "₹223"
+          },
+          "product_id": 9023,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b23.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 25",
+          "normal_price": "₹58",
+          "mrp": {
+            "text": "₹224"
+          },
+          "product_id": 9024,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b24.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 26"
+          },
+          "normal_price": {
+            "text": "₹56"
+          },
+          "mrp": {
+            "text": "₹225"
+          },
+          "product_id": 9025,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b25.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 27"
+          },
+          "normal_price": {
+            "text": "₹54"
+          },
+          "mrp": {
+            "text": "₹226"
+          },
+          "product_id": 9026,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b26.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 28"
+          },
+          "normal_price": {
+            "text": "₹52"
+          },
+          "mrp": {
+            "text": "₹227"
+          },
+          "product_id": 9027,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b27.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 29",
+          "normal_price": "₹50",
+          "mrp": {
+            "text": "₹228"
+          },
+          "product_id": 9028,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b28.jpg"
+          },
+          "is_sold_out": true
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 30"
+          },
+          "normal_price": {
+            "text": "₹48"
+          },
+          "mrp": {
+            "text": "₹229"
+          },
+          "product_id": 9029,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b29.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 31"
+          },
+          "normal_price": {
+            "text": "₹115"
+          },
+          "mrp": {
+            "text": "₹230"
+          },
+          "product_id": 9030,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b30.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 32"
+          },
+          "normal_price": {
+            "text": "₹113"
+          },
+          "mrp": {
+            "text": "₹231"
+          },
+          "product_id": 9031,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b31.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 33",
+          "normal_price": "₹111",
+          "mrp": {
+            "text": "₹232"
+          },
+          "product_id": 9032,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b32.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 34"
+          },
+          "normal_price": {
+            "text": "₹110"
+          },
+          "mrp": {
+            "text": "₹233"
+          },
+          "product_id": 9033,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b33.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 35"
+          },
+          "normal_price": {
+            "text": "₹108"
+          },
+          "mrp": {
+            "text": "₹234"
+          },
+          "product_id": 9034,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b34.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 36"
+          },
+          "normal_price": {
+            "text": "₹106"
+          },
+          "mrp": {
+            "text": "₹235"
+          },
+          "product_id": 9035,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b35.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 37",
+          "normal_price": "₹104",
+          "mrp": {
+            "text": "₹236"
+          },
+          "product_id": 9036,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b36.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 38"
+          },
+          "normal_price": {
+            "text": "₹102"
+          },
+          "mrp": {
+            "text": "₹237"
+          },
+          "product_id": 9037,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b37.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 39"
+          },
+          "normal_price": {
+            "text": "₹100"
+          },
+          "mrp": {
+            "text": "₹238"
+          },
+          "product_id": 9038,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b38.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 40"
+          },
+          "normal_price": {
+            "text": "₹98"
+          },
+          "mrp": {
+            "text": "₹239"
+          },
+          "product_id": 9039,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b39.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 41",
+          "normal_price": "₹96",
+          "mrp": {
+            "text": "₹240"
+          },
+          "product_id": 9040,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b40.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 42"
+          },
+          "normal_price": {
+            "text": "₹94"
+          },
+          "mrp": {
+            "text": "₹241"
+          },
+          "product_id": 9041,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b41.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 43"
+          },
+          "normal_price": {
+            "text": "₹92"
+          },
+          "mrp": {
+            "text": "₹242"
+          },
+          "product_id": 9042,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b42.jpg"
+          },
+          "is_sold_out": true
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 44"
+          },
+          "normal_price": {
+            "text": "₹90"
+          },
+          "mrp": {
+            "text": "₹243"
+          },
+          "product_id": 9043,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b43.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 45",
+          "normal_price": "₹88",
+          "mrp": {
+            "text": "₹244"
+          },
+          "product_id": 9044,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b44.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 46"
+          },
+          "normal_price": {
+            "text": "₹86"
+          },
+          "mrp": {
+            "text": "₹245"
+          },
+          "product_id": 9045,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b45.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 47"
+          },
+          "normal_price": {
+            "text": "₹84"
+          },
+          "mrp": {
+            "text": "₹246"
+          },
+          "product_id": 9046,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b46.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 48"
+          },
+          "normal_price": {
+            "text": "₹82"
+          },
+          "mrp": {
+            "text": "₹247"
+          },
+          "product_id": 9047,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b47.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 49",
+          "normal_price": "₹79",
+          "mrp": {
+            "text": "₹248"
+          },
+          "product_id": 9048,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b48.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 50"
+          },
+          "normal_price": {
+            "text": "₹77"
+          },
+          "mrp": {
+            "text": "₹249"
+          },
+          "product_id": 9049,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b49.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 51"
+          },
+          "normal_price": {
+            "text": "₹75"
+          },
+          "mrp": {
+            "text": "₹250"
+          },
+          "product_id": 9050,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b50.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 52"
+          },
+          "normal_price": {
+            "text": "₹73"
+          },
+          "mrp": {
+            "text": "₹251"
+          },
+          "product_id": 9051,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b51.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 53",
+          "normal_price": "₹71",
+          "mrp": {
+            "text": "₹252"
+          },
+          "product_id": 9052,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b52.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 54"
+          },
+          "normal_price": {
+            "text": "₹68"
+          },
+          "mrp": {
+            "text": "₹253"
+          },
+          "product_id": 9053,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b53.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 55"
+          },
+          "normal_price": {
+            "text": "₹66"
+          },
+          "mrp": {
+            "text": "₹254"
+          },
+          "product_id": 9054,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b54.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 56"
+          },
+          "normal_price": {
+            "text": "₹64"
+          },
+          "mrp": {
+            "text": "₹255"
+          },
+          "product_id": 9055,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b55.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 57",
+          "normal_price": "₹61",
+          "mrp": {
+            "text": "₹256"
+          },
+          "product_id": 9056,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b56.jpg"
+          },
+          "is_sold_out": true
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 58"
+          },
+          "normal_price": {
+            "text": "₹59"
+          },
+          "mrp": {
+            "text": "₹257"
+          },
+          "product_id": 9057,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b57.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 59"
+          },
+          "normal_price": {
+            "text": "₹57"
+          },
+          "mrp": {
+            "text": "₹258"
+          },
+          "product_id": 9058,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b58.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 60"
+          },
+          "normal_price": {
+            "text": "₹54"
+          },
+          "mrp": {
+            "text": "₹259"
+          },
+          "product_id": 9059,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b59.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 61",
+          "normal_price": "₹130",
+          "mrp": {
+            "text": "₹260"
+          },
+          "product_id": 9060,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b60.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 62"
+          },
+          "normal_price": {
+            "text": "₹128"
+          },
+          "mrp": {
+            "text": "₹261"
+          },
+          "product_id": 9061,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b61.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 63"
+          },
+          "normal_price": {
+            "text": "₹126"
+          },
+          "mrp": {
+            "text": "₹262"
+          },
+          "product_id": 9062,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b62.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 64"
+          },
+          "normal_price": {
+            "text": "₹124"
+          },
+          "mrp": {
+            "text": "₹263"
+          },
+          "product_id": 9063,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b63.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 65",
+          "normal_price": "₹121",
+          "mrp": {
+            "text": "₹264"
+          },
+          "product_id": 9064,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b64.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 66"
+          },
+          "normal_price": {
+            "text": "₹119"
+          },
+          "mrp": {
+            "text": "₹265"
+          },
+          "product_id": 9065,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b65.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 67"
+          },
+          "normal_price": {
+            "text": "₹117"
+          },
+          "mrp": {
+            "text": "₹266"
+          },
+          "product_id": 9066,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b66.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 68"
+          },
+          "normal_price": {
+            "text": "₹115"
+          },
+          "mrp": {
+            "text": "₹267"
+          },
+          "product_id": 9067,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b67.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "Blinkit Test Product 69",
+          "normal_price": "₹113",
+          "mrp": {
+            "text": "₹268"
+          },
+          "product_id": 9068,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b68.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": {
+            "text": "Blinkit Test Product 70"
+          },
+          "normal_price": {
+            "text": "₹110"
+          },
+          "mrp": {
+            "text": "₹269"
+          },
+          "product_id": 9069,
+          "brand_name": {
+            "text": "TestBrand"
+          },
+          "variant": {
+            "text": "1 kg"
+          },
+          "image": {
+            "url": "https://example.com/b69.jpg"
+          },
+          "is_sold_out": false
+        }
+      },
+      {
+        "data": {
+          "name": "No price here",
+          "product_id": 9991
+        }
+      },
+      {
+        "data": {
+          "normal_price": "₹10",
+          "product_id": 9992
+        }
+      },
+      {
+        "data": null
+      },
+      {},
+      {
+        "data": {
+          "name": {
+            "text": "Empty price"
+          },
+          "normal_price": "",
+          "product_id": 9993
+        }
+      }
+    ]
+  }
+}

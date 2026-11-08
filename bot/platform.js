@@ -25,8 +25,64 @@ function extract(json, cat, ctx) {
       if (p && !seen.has(p.id)) { seen.add(p.id); out.push(p); return; }
     }
     for (const k in o) walk(o[k], d + 1);
-  })(json, 0);
+  })(json && json.response ? json.response : json, 0);
   return out;
+}
+
+// Pages come back sorted by discount: stop when a page is short or its tail has
+// fallen below the 50% cutoff instead of fetching empty pages.
+function cutoffReached(items) {
+  if (!items.length) return true;
+  if (items.every(p => p.inStock === false)) return true;
+  return items.slice(-3).every(p => p.disc < 50);
+}
+
+// Delivery points to scan: BLINKIT_LOCATIONS="lat,lon;lat,lon" scans each pincode
+// area and merges the results (deduped by product id). Falls back to the single
+// BLINKIT_LAT / BLINKIT_LON pair.
+function locationsOf(env) {
+  const list = String(env.BLINKIT_LOCATIONS || '').split(';').map(x => x.trim()).filter(Boolean)
+    .map(x => { const [lat, lon] = x.split(',').map(y => y.trim()); return { lat, lon }; })
+    .filter(l => l.lat && l.lon);
+  if (list.length) return list;
+  return [{ lat: env.BLINKIT_LAT, lon: env.BLINKIT_LON }];
+}
+
+async function fetchOne(job, page, lat, lon, ctx) {
+  const { env, fetch, sleep } = ctx;
+  const [code] = job.sub, offset = (page - 1) * 15, pi = String(page - 1);
+  let url, body;
+  if (job.g.uuid) {
+    url = 'https://blinkit.com/v1/layout/listing_widgets?collection_uuid=' + encodeURIComponent(job.g.uuid) + '&collection_group_id=' + code + '&sort=discount_desc';
+    body = { offset: String(offset), limit: '15', collection_filters: '[]', collection_group_id: code, collection_properties: JSON.stringify([{ id: 4179, name: 'NEXT_PRODUCT_RECOMMENDATION', value: 'true' }]), collection_uuid: job.g.uuid, exclude_combos: 'false', last_snippet_type: 'product_card_snippet_type_2', last_widget_type: 'product_container', oos_visibility: 'true', page_index: pi, products: '[]', total_entities_processed: String(offset), total_pagination_items: String(15 * 200), applied_filters: null, sort: 'discount_desc' };
+  } else {
+    url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(code) + '&search_type=type_to_search&page_index=' + pi + '&offset=' + offset + '&limit=15&oos_visibility=true&sort=discount_desc';
+    body = { query: code, q: code, search_query: code, page_index: page - 1, offset, limit: 15, oos_visibility: 'true', sort: 'discount_desc' };
+  }
+  await sleep(350 + Math.random() * 450); // Blinkit rate-limits bursts hard
+  let fellBack = false;
+  for (let a = 0; a < 5; a++) {
+    const r = await fetch(url, {
+      method: 'POST', body: JSON.stringify(body),
+      headers: { 'content-type': 'application/json', accept: '*/*', app_client: 'consumer_web', lat, lon, 'user-agent': UA, origin: 'https://blinkit.com', referer: 'https://blinkit.com/', ...(env.BLINKIT_COOKIE ? { cookie: env.BLINKIT_COOKIE } : {}) }
+    });
+    if (r.status === 403) throw Object.assign(new Error('Blinkit blocked this machine (HTTP 403). GitHub-hosted runners are often blocked; use a self-hosted runner (see README).'), { blocked: true });
+    if (r.status === 429) { await sleep(2500 * (a + 1) + Math.random() * 1000); continue; }
+    if (r.status >= 500) { await sleep(2000 * (a + 1)); continue; }
+    if (!r.ok) return [];
+    const items = extract(await r.json(), job.g.name + ' › ' + job.sub[1], ctx);
+    // A collection that returns nothing is retried once as a keyword search for
+    // the subcategory name, instead of reporting an empty aisle.
+    if (!items.length && !fellBack && job.g.uuid) {
+      fellBack = true;
+      url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(job.sub[1]) + '&search_type=type_to_search&page_index=0&offset=0&limit=15&oos_visibility=true&sort=discount_desc';
+      body = { query: job.sub[1], q: job.sub[1], search_query: job.sub[1], page_index: 0, offset: 0, limit: 15, oos_visibility: 'true', sort: 'discount_desc' };
+      continue;
+    }
+    items.more = items.length >= 15 && !cutoffReached(items);
+    return items;
+  }
+  throw new Error('rate limited');
 }
 
 module.exports = {
@@ -36,28 +92,21 @@ module.exports = {
   sortedByDiscount: true,
   pageSize: 15,
   async fetchPage(job, page, ctx) {
-    const { env, fetch, sleep } = ctx;
-    const [code] = job.sub, offset = (page - 1) * 15, pi = String(page - 1);
-    let url, body;
-    if (job.g.uuid) {
-      url = 'https://blinkit.com/v1/layout/listing_widgets?collection_uuid=' + encodeURIComponent(job.g.uuid) + '&collection_group_id=' + code + '&sort=discount_desc';
-      body = { offset: String(offset), limit: '15', collection_uuid: job.g.uuid, collection_group_id: code, page_index: pi, oos_visibility: true, sort: 'discount_desc' };
-    } else {
-      url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(code) + '&search_type=type_to_search&page_index=' + pi + '&offset=' + offset + '&limit=15&oos_visibility=true&sort=discount_desc';
-      body = { query: code, q: code, search_query: code, page_index: pi, offset: String(offset), limit: '15', oos_visibility: true, sort: 'discount_desc' };
+    // Multi-pincode: scan every configured location and merge, deduped by id.
+    // A location that fails (rate limit, block) is skipped; the job only fails
+    // when every location fails.
+    const merged = [], seen = new Set();
+    let anyMore = false, okCount = 0, lastErr = null;
+    for (const { lat, lon } of locationsOf(ctx.env)) {
+      let items;
+      try { items = await fetchOne(job, page, lat, lon, ctx); }
+      catch (e) { if (e.blocked) throw e; lastErr = e; continue; }
+      okCount++;
+      for (const p of items) if (!seen.has(p.id)) { seen.add(p.id); merged.push(p); }
+      if (items.more) anyMore = true;
     }
-    await sleep(350 + Math.random() * 450); // Blinkit rate-limits bursts hard
-    for (let a = 0; a < 5; a++) {
-      const r = await fetch(url, {
-        method: 'POST', body: JSON.stringify(body),
-        headers: { 'content-type': 'application/json', accept: '*/*', app_client: 'consumer_web', lat: env.BLINKIT_LAT, lon: env.BLINKIT_LON, 'user-agent': UA, origin: 'https://blinkit.com', referer: 'https://blinkit.com/', ...(env.BLINKIT_COOKIE ? { cookie: env.BLINKIT_COOKIE } : {}) }
-      });
-      if (r.status === 403) throw Object.assign(new Error('Blinkit blocked this machine (HTTP 403). GitHub-hosted runners are often blocked; use a self-hosted runner (see README).'), { blocked: true });
-      if (r.status === 429) { await sleep(2500 * (a + 1) + Math.random() * 1000); continue; }
-      if (r.status >= 500) { await sleep(2000 * (a + 1)); continue; }
-      if (!r.ok) return [];
-      return extract(await r.json(), job.g.name + ' › ' + job.sub[1], ctx);
-    }
-    throw new Error('rate limited');
+    if (!okCount) throw lastErr || new Error('all locations failed');
+    merged.more = anyMore;
+    return merged;
   }
 };
