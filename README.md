@@ -6,7 +6,7 @@ Scans the Blinkit keyword groups and collections you pick and shows the biggest 
 
 ## What's new in v2 (2026-11-08)
 
-- **Full catalogue:** 28 Blinkit collections (Baby Care, Bath & Body, Atta/Rice/Dal, Dairy, Chips & Namkeen, Sweets, Ice Cream, Electronics, and 20 more — top 3 subcategories each) plus 8 keyword groups — up from 3 collections. Subcategory lists can be refreshed live from `POST /v1/layout/listing` with a `collection_uuid`.
+- **Full catalogue:** 28 Blinkit collections (Baby Care, Bath & Body, Atta, Rice & Dal, Dairy, Bread & Eggs, Chips & Namkeen, Sweets & Chocolates, Ice Creams & More, Electronics, and 20 more — top 3 subcategories each) plus 8 keyword groups — up from 3 collections. Subcategory lists can be refreshed live from `POST /v1/layout/listing` with a `collection_uuid`.
 - **Blank-results fix:** a scan that fetches nothing now says why instead of showing an empty grid — no delivery location, Blinkit 403 block, rate limit, or server error. The empty state shows how many products the last scan fetched and the exact fetch problem.
 - **Second fetch shape:** a collection that returns nothing is retried once as a keyword search (`/v1/layout/search`) for the subcategory name, instead of reporting an empty aisle.
 - **Full listing request body:** `listing_widgets` now sends the complete body the site itself sends (collection filters/properties, snippet types, totals) instead of the short form, and search requests use the site's exact field types (`page_index`/`offset`/`limit` as numbers, `oos_visibility` as `"true"`).
@@ -69,17 +69,17 @@ Each deal is sent once, and again only if its price drops further. Use the users
 
 ## Telegram bot (GitHub Actions)
 
-Hunter can also run on its own, without a browser, on GitHub Actions. Every 30 minutes it scans Blinkit, compares with the previous run (kept in `data/state.json`), and sends what changed to Telegram: a morning catalogue, new deals, price drops, and back-in-stock items. Identical prices are not re-sent.
+Hunter can also run on its own, without a browser, on GitHub Actions. Every 30 minutes between 08:31 and 00:01 IST (03:01–18:31 UTC) it scans Blinkit, compares with the previous run (kept in `data/state.json`), and sends what changed to Telegram: a morning catalogue, new deals, price drops, and back-in-stock items. Identical prices are not re-sent.
 
 1. Fork [github.com/stymrj/Blinkit-Deals](https://github.com/stymrj/Blinkit-Deals).
 2. Create a bot with `@BotFather` (`TELEGRAM_BOT_TOKEN`) and get your chat ID from `@userinfobot` (`TELEGRAM_CHAT_ID`).
-3. Find your delivery coordinates: open Google Maps, right-click your delivery address — the first line shows them, e.g. `12.9716, 77.5946`. That's `BLINKIT_LAT` / `BLINKIT_LON`. For several pincodes, set the **Variable** `BLINKIT_LOCATIONS` to `lat,lon;lat,lon` instead. Optional: copy the **cookie** header from a logged-in blinkit.com tab into `BLINKIT_COOKIE` if plain requests are refused.
+3. Find your delivery coordinates: open Google Maps, right-click your delivery address — the first line shows them, e.g. `12.9716, 77.5946`. That's `BLINKIT_LAT` / `BLINKIT_LON`. For several delivery areas, also set the **Variable** `BLINKIT_LOCATIONS` to `lat,lon;lat,lon` — the bot scans each one and merges the results, deduped by product. `BLINKIT_LAT` / `BLINKIT_LON` are still required even when `BLINKIT_LOCATIONS` is set. Optional: copy the **cookie** header from a logged-in blinkit.com tab into `BLINKIT_COOKIE` if plain requests are refused.
 4. In your fork, add the secrets above, and set the **Variable** `BOT_ENABLED` = `true`.
 5. In **Actions**, enable workflows, run **Telegram deal alerts** with **Print the messages instead of sending them** ticked to preview, then run it again for real.
 
 > **Important:** Blinkit usually blocks GitHub's cloud servers. If the run log says *blocked (HTTP 403)*, use a self-hosted runner on your own computer: **Settings → Actions → Runners → New self-hosted runner**, then set the **Variable** `RUNNER` = `self-hosted`.
 
-Optional variables: `MIN_DISCOUNT`, `THRESHOLDS` (e.g. `grocery=55,snacks=65`), `GROUPS`, `PAGES` (1–5), `DIGEST_HOUR_IST`, `RUNNER`. Groups and thresholds live in `bot/config.json`.
+Optional variables: `MIN_DISCOUNT`, `THRESHOLDS` (e.g. `grocery=55,snacks=65`), `GROUPS`, `PAGES` (1–5), `DIGEST_HOUR_IST`, `BLINKIT_LOCATIONS` (Variable, `lat,lon;lat,lon`), `MAX_WORKERS` (default 2), `MAX_ALERTS` (default 40), `RUNNER`. Groups and thresholds live in `bot/config.json`.
 
 Local run: `cp .env.example .env`, then `node bot/run.js --dry-run` (prints, sends nothing) or `node bot/run.js`. Node 18+, no `npm install` needed.
 
@@ -96,13 +96,18 @@ Uses Blinkit's own web endpoints (`/v1/layout/search` and `/v1/layout/listing_wi
 - **Rate limited (429):** wait a few minutes and retry; the scan already backs off and retries.
 - **Only some categories empty:** that aisle may genuinely have no deals at your minimum discount — lower it, or pick fewer categories for a faster scan (28 collections × 2 pages takes a while).
 - **Telegram test fails in the bookmarklet:** install the userscript; some shops block bookmarklets from calling Telegram.
+- **Bot run fails with `Missing settings: …`:** the named secret is not set in your fork — add it under Settings → Secrets and variables → Actions.
+- **Bot run exits 1, `TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set`:** set both secrets; a scheduled run with `BOT_ENABLED=true` but no Telegram credentials is a failed run, not a quiet skip.
+- **Bot reports `Blinkit blocked this machine (HTTP 403)`:** Blinkit blocks GitHub's cloud servers — use a self-hosted runner (`RUNNER` = `self-hosted`).
+- **Bot scans only one area although `BLINKIT_LOCATIONS` is set:** it must be a repository **Variable**, not a secret, and `BLINKIT_LAT` / `BLINKIT_LON` secrets are still required.
+- **Scheduled runs do nothing:** set the repository **Variable** `BOT_ENABLED` to `true` — the schedule is gated on it. Manual runs from Actions always run.
 
 ## Testing
 
 ```bash
 node --check src/deals.js bot/platform.js bot/core.js   # syntax
-node test-results-tab.js                                # 31 checks: 70-item fixture -> 70 cards, cutoff, fallback, retries, diagnostics, CSV, unit price
-node test/bot-platform.test.js                          # 8 checks: bot fetch layer (multi-pincode, fallback, cutoff) with stubbed fetch
+node test-results-tab.js                                # 42 checks: 70-item fixture -> 70 cards, cutoff, fallback, retries, diagnostics, CSV, unit price
+node test/bot-platform.test.js                          # 10 checks: bot fetch layer (multi-pincode, fallback, cutoff) with stubbed fetch
 node build.js                                           # rebuilds dist/ and index.html
 ```
 
@@ -111,7 +116,7 @@ The browser tests use fixtures, not the live site: the parser, fallback, cutoff 
 ## Limitations
 
 - Prices and stock depend on your local Blinkit store.
-- A full scan takes about a minute because of the pacing; deals appear as they arrive.
+- A full scan takes a few minutes because of the pacing; deals appear as they arrive.
 - The endpoints are undocumented and can change.
 
 ## Project layout
@@ -122,7 +127,7 @@ src/index.tpl.html   install page template
 fixtures/            sample layout payload used by the regression test
 test/                bot platform test (stubbed fetch)
 bot/                 Telegram bot: run.js, core.js, platform.js, config.json
-.github/workflows/   telegram-bot.yml (every 30 minutes)
+.github/workflows/   telegram-bot.yml (every 30 min, 08:31–00:01 IST)
 .env.example         settings for local runs (incl. BLINKIT_LOCATIONS)
 build.js             builds dist/ and index.html
 ```

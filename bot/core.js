@@ -91,8 +91,8 @@ async function run(platform, argv = process.argv.slice(2)) {
   const dry = argv.includes('--dry-run') || env.DRY_RUN === 'true';
   const token = env.TELEGRAM_BOT_TOKEN, chat = env.TELEGRAM_CHAT_ID;
   if (!dry && (!token || !chat)) {
-    console.log('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set, so there is nothing to do. See README → Telegram bot.');
-    return 0;
+    console.error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set. See README → Telegram bot.');
+    return 1;
   }
   const missing = (platform.required || []).filter(k => !env[k]);
   if (missing.length) { console.error('Missing settings: ' + missing.join(', ') + '. See README → Telegram bot.'); return 1; }
