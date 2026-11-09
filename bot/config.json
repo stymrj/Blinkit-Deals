@@ -245,6 +245,62 @@
           "Power bank"
         ]
       ]
+    },
+    {
+      "id": "atta",
+      "name": "Atta, Rice & Dal (collection)",
+      "uuid": "OTg3NjU0MzIxMjM0NTMzNjk=",
+      "minDiscount": 60,
+      "subs": [
+        [
+          "16426",
+          "Atta"
+        ],
+        [
+          "16431",
+          "Local Rice"
+        ],
+        [
+          "16423",
+          "Dal"
+        ]
+      ]
+    },
+    {
+      "id": "chips",
+      "name": "Chips & Namkeen (collection)",
+      "uuid": "OTg3NjU0MzIxMjM0NTMzNjg=",
+      "minDiscount": 60,
+      "subs": [
+        [
+          "11402",
+          "Chips & Wafers"
+        ],
+        [
+          "11405",
+          "Bhujia & Mixtures"
+        ],
+        [
+          "11404",
+          "Namkeen Snacks"
+        ]
+      ]
+    },
+    {
+      "id": "baby",
+      "name": "Baby Care (collection)",
+      "uuid": "OTg3NjU0MzIxMjM0NTMzMzk=",
+      "minDiscount": 60,
+      "subs": [
+        [
+          "46757",
+          "Diaper & Wipes"
+        ],
+        [
+          "20667",
+          "Baby Food"
+        ]
+      ]
     }
   ]
 }

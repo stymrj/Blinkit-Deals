@@ -8,7 +8,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const price = v => {
   if (v == null) return 0;
   if (typeof v === 'number') return v;
-  if (typeof v === 'object') { for (const k of ['value', 'amount', 'text', 'defaultValue']) { const p = price(v[k]); if (p > 0) return p; } return 0; }
+  // Prices arrive keyed value / amount / max / text (per-unit {max, min}
+  // shapes carry the selling price in .max, falling back to .min). A price
+  // read as 0 drops a genuine 85–95% off item from the bot's alerts.
+  if (typeof v === 'object') { for (const k of ['value', 'amount', 'max', 'text', 'defaultValue']) { const p = price(v[k]); if (p > 0) return p; } if (v.min != null) { const p = price(v.min); if (p > 0) return p; } return 0; }
   const m = String(v).replace(/,/g, '').match(/\d+(\.\d+)?/);
   return m ? +m[0] : 0;
 };

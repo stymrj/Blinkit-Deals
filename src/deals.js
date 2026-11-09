@@ -14,13 +14,25 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const debounce = (f, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
 
-  const price = v => { if (v == null) return 0; if (typeof v === 'number') return v; const m = String(v).replace(/,/g, '').match(/\d+(\.\d+)?/); return m ? +m[0] : 0; };
+  // Prices arrive as a number, a "₹1,999" string, or an object keyed text /
+  // amount / value / max (per-unit {max, min} shapes carry the selling price
+  // in .max, falling back to .min). Read every key instead of only .text: a
+  // price read as 0 either drops the item outright (no selling price) or
+  // flattens its MRP to the selling price, which computes disc 0 — and a
+  // page whose tail parses to disc 0 trips the 50% cutoff, so paging stops
+  // and later pages (with real high discounts) are never fetched.
+  const price = v => { if (v == null) return 0; if (typeof v === 'number') return v; if (typeof v === 'object') { for (const k of ['amount', 'value', 'max', 'text', 'defaultValue']) { const p = price(v[k]); if (p > 0) return p; } if (v.min != null) { const p = price(v.min); if (p > 0) return p; } return 0; } const m = String(v).replace(/,/g, '').match(/\d+(\.\d+)?/); return m ? +m[0] : 0; };
   const guessBrand = t => (String(t).trim().split(/\s+/)[0] || '').replace(/[^\w&'-]/g, '');
   const EXCLUDED = [];
   const allowed = p => { const t = p.title.toLowerCase(); return !EXCLUDED.some(k => t.includes(k)); };
   const KWG = (id, name, kws) => ({ id, name, subs: kws.map(k => [k, k[0].toUpperCase() + k.slice(1)]) });
 
   // ───────────────────────── Catalogue ─────────────────────────
+  // Keyword groups search by name; collection groups below are the Nov 2026
+  // Blinkit taxonomy (28 categories, top 3 subcategories each). Subcategory lists
+  // can be refreshed live from POST /v1/layout/listing with a collection_uuid.
+  // Each collection job fetches page 1 sorted by discount; later pages stop once
+  // the last items on a page fall below the 50% discount cutoff.
   const GROUPS = [
     KWG('grocery', 'Grocery & Staples', ['atta', 'rice', 'dal', 'oil', 'ghee', 'sugar', 'salt', 'masala']),
     KWG('snacks', 'Snacks & Sweets', ['chips', 'biscuits', 'namkeen', 'chocolate', 'ice cream', 'noodles']),
@@ -30,19 +42,64 @@
     KWG('home', 'Home & Cleaning', ['detergent', 'dishwash', 'cleaner', 'tissue', 'mop']),
     KWG('fresh', 'Fresh', ['fruits', 'vegetables', 'onion', 'tomato', 'potato']),
     KWG('tech', 'Electronics', ['charger', 'earphones', 'cable', 'battery', 'power bank']),
-    { id: 'baby', name: 'Baby Care (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzMzk=', subs: [['46757', 'Diaper & Wipes'], ['20667', 'Baby Food']] },
-    { id: 'atta', name: 'Atta, Rice & Dal (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNjk=', subs: [['16426', 'Atta'], ['16431', 'Local Rice']] },
-    { id: 'chips', name: 'Chips & Namkeen (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNjg=', subs: [['11402', 'Chips & Wafers'], ['11405', 'Bhujia & Mixtures']] }
+    { id: 'baby', name: 'Baby Care (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzMzk=', subs: [['46757', 'Diaper & Wipes'], ['20667', 'Baby Food'], ['11683', 'Baby Shampoo & Soaps']] },
+    { id: 'bath', name: 'Bath & Body (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNDY=', subs: [['679509', 'Bathing Soaps'], ['723321', 'Shower Gels & Scrubs'], ['11650', 'Oral Care']] },
+    { id: 'beauty', name: 'Beauty & Cosmetics (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNDE=', subs: [['11672', 'Lipstick & Gloss'], ['11671', 'Cleansers & Toners'], ['11675', 'Foundation & Compact']] },
+    { id: 'feminine', name: 'Feminine Hygiene (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNDA=', subs: [['12237', 'Sanitary Pads'], ['11677', 'Tampons & Menstrual Cups'], ['12238', 'Period Panty']] },
+    { id: 'hair', name: 'Hair (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNDU=', subs: [['12014', 'Shampoo'], ['12015', 'Conditioner'], ['135472', 'Hair Colour']] },
+    { id: 'health', name: 'Health & Pharma (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzMzI=', subs: [['532514', 'Fever & Pain Relief'], ['556584', 'Cough, Cold & Flu'], ['11698', 'Masks & Sanitizers']] },
+    { id: 'wellness', name: 'Sexual Wellness (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzMzA=', subs: [['12241', 'Massagers'], ['12240', 'Condoms'], ['11699', 'Lubricants']] },
+    { id: 'skin', name: 'Skin & Face (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNDI=', subs: [['12020', 'Sunscreen'], ['204868', 'Face Cleaning'], ['206263', 'Face Oil, Serum & Essence']] },
+    { id: 'atta', name: 'Atta, Rice & Dal (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNjk=', subs: [['16426', 'Atta'], ['16431', 'Local Rice'], ['41521', 'Rice']] },
+    { id: 'bakery', name: 'Bakery & Biscuits (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNTQ=', subs: [['11527', 'Cookies'], ['11528', 'Cream Biscuits'], ['11530', 'Healthy & Digestive']] },
+    { id: 'meat', name: 'Chicken, Meat & Fish (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNTI=', subs: [['11537', 'Chicken'], ['24161', 'Fresh Meat'], ['11540', 'Fish & Seafood']] },
+    { id: 'dairy-col', name: 'Dairy, Bread & Eggs (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNTU=', subs: [['11591', 'Milk'], ['11592', 'Bread & Pav'], ['11595', 'Eggs']] },
+    { id: 'dryfruits', name: 'Dry Fruits & Cereals (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNTM=', subs: [['11599', 'Dry Fruits'], ['11600', 'Dry Fruits Snacks'], ['11601', 'Corn Flakes & Kids Cereals']] },
+    { id: 'kitchen', name: 'Kitchenware & Appliances (collection)', uuid: 'OTg3NjU0MzIxMjM0NTI5ODI=', subs: [['620088', 'Bottles & Flasks'], ['659661', 'Kitchen Accessories'], ['620090', 'Mugs & Glasses']] },
+    { id: 'oil', name: 'Oil, Ghee & Masala (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNTY=', subs: [['18687', 'Oil'], ['11585', 'Desi Ghee'], ['92942', 'Cow Ghee']] },
+    { id: 'veg', name: 'Vegetables & Fruits (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNzE=', subs: [['90651', 'All'], ['11370', 'Fresh Vegetables'], ['11371', 'Fresh Fruits']] },
+    { id: 'cleaners', name: 'Cleaners & Repellents (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzMjc=', subs: [['11720', 'Repellents & Disinfectants'], ['11711', 'Detergent Powder & Bars'], ['82715', 'Liquid Detergents']] },
+    { id: 'electronics', name: 'Electronics (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzMjY=', subs: [['11728', 'Trimmers & Hair Appliances'], ['17702', 'Earphones & Headsets'], ['12249', 'Speakers']] },
+    { id: 'home-life', name: 'Home & Lifestyle (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzMjk=', subs: [['274585', 'Home Decor'], ['11740', 'Plants & Bouquets'], ['11705', 'Bedsheets & Towels']] },
+    { id: 'stationery', name: 'Stationery & Games (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzMjU=', subs: [['627397', 'Notebooks & Diaries'], ['627401', 'Pens & Pencils'], ['12256', 'Toys & Games']] },
+    { id: 'chips', name: 'Chips & Namkeen (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNjg=', subs: [['11402', 'Chips & Wafers'], ['11405', 'Bhujia & Mixtures'], ['11404', 'Namkeen Snacks']] },
+    { id: 'drinks-col', name: 'Drinks & Juices (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNTE=', subs: [['11607', 'Soft Drinks'], ['673755', 'Fruit Juices'], ['885907', 'Zero Sugar Drinks']] },
+    { id: 'icecream-col', name: 'Ice Creams & More (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMxOTg=', subs: [['12770', 'Tubs'], ['12768', 'Sticks'], ['15719', 'Cones']] },
+    { id: 'instant', name: 'Instant Food (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNDk=', subs: [['11624', 'Noodles'], ['11629', 'Frozen Veg Snacks'], ['11626', 'Pasta']] },
+    { id: 'paan', name: 'Paan Corner (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNDc=', subs: [['15119', 'Cigarettes'], ['383144', 'Lighters'], ['62439', 'Cigar']] },
+    { id: 'sauces', name: 'Sauces & Spreads (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNDg=', subs: [['11643', 'Tomato Ketchup'], ['11636', 'Jam & Spreads'], ['11641', 'Mayonnaise']] },
+    { id: 'sweets', name: 'Sweets & Chocolates (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNjc=', subs: [['11414', 'Chocolates'], ['11415', 'Chocolate Packs'], ['18681', 'Chocolate Gift Pack']] },
+    { id: 'tea', name: 'Tea, Coffee & Milk Drinks (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNTA=', subs: [['11617', 'Tea'], ['11618', 'Coffee'], ['18677', 'Hot Chocolate']] }
   ];
   let noLoc = false;
+  // Nov 2026 blank-results fix: a fetch that returns no data must say why (no location,
+  // 403 block, rate limit) instead of opening an empty grid. The last such message
+  // is kept here and shown in the empty state after a scan.
+  let lastFetchError = '';
+  // Server sorts every page by discount, so once the tail of a page drops below 50%
+  // off (or is all sold out) there is nothing worth fetching on later pages.
+  const DISCOUNT_CUTOFF = 50;
+  function pageResult(items, more, error) { items.more = more; if (error) items.error = error; return items; }
+  function cutoffReached(items) {
+    if (!items.length) return true;
+    if (items.every(p => p.inStock === false)) return true;
+    return items.slice(-3).every(p => p.disc < DISCOUNT_CUTOFF);
+  }
+  function classifyFetchError(status) {
+    if (status === 403) return 'Blinkit blocked this request (HTTP 403). Set your delivery address on blinkit.com and retry from that tab; automated datacentre IPs are often blocked.';
+    if (status === 429) return 'Blinkit rate-limited the scan (HTTP 429). Wait a few minutes and retry.';
+    if (status === 401) return 'Blinkit refused the session (HTTP 401). Open blinkit.com signed in and retry.';
+    if (status >= 500) return 'Blinkit returned HTTP ' + status + ' instead of deal data. Wait a few minutes and retry.';
+    return 'Blinkit returned HTTP ' + status + ' instead of deal data.';
+  }
   const cookie = n => { try { const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : ''; } catch (e) { return ''; } };
   const loc = () => ({ lat: store.lat || cookie('gr_1_lat'), lon: store.lon || cookie('gr_1_lon') });
   const txt = v => (v && typeof v === 'object' ? v.text : v);
   function normalise(o, cat) {
     const d = o.data, ci = (d.atc_action && d.atc_action.add_to_cart && d.atc_action.add_to_cart.cart_item) || {};
     const title = txt(d.name) || ci.display_name || ci.product_name;
-    const sell = price(txt(d.normal_price) || ci.price);
-    let mrp = price(txt(d.mrp) || ci.mrp);
+    const sell = price(d.normal_price) || price(ci.price);
+    let mrp = price(d.mrp) || price(ci.mrp);
     if (!title || !sell) return null;
     if (mrp < sell) mrp = sell;
     const unit = txt(d.variant) || ci.unit || '';
@@ -52,10 +109,13 @@
     const oos = d.is_sold_out === true || ci.inventory === 0 || d.inventory === 0;
     const brand = txt(d.brand_name) || d.brand || ci.brand || guessBrand(title);
     const slug = String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return { id: String(pid), title: String(title) + (unit ? ' · ' + unit : ''), brand: String(brand), price: sell, mrp, disc: mrp > sell ? Math.round((mrp - sell) / mrp * 100) : 0, save: mrp - sell, img, url: 'https://blinkit.com/prn/' + slug + '/prid/' + pid, inStock: !oos, cat };
+    const ratingNum = parseFloat(d.rating && d.rating.value);
+    const badge = Array.isArray(d.product_badges) && d.product_badges.length ? txt(d.product_badges[0]) : (d.product_badge_type ? String(d.product_badge_type) : '');
+    return { id: String(pid), title: String(title) + (unit ? ' · ' + unit : ''), brand: String(brand), price: sell, mrp, disc: mrp > sell ? Math.round((mrp - sell) / mrp * 100) : 0, save: mrp - sell, img, url: 'https://blinkit.com/prn/' + slug + '/prid/' + pid, inStock: !oos, cat, rating: Number.isFinite(ratingNum) ? ratingNum : null, badge };
   }
   function extract(json, cat) {
     const out = [], seen = new Set();
+    const root = json && json.response ? json.response : json;
     (function walk(o, d) {
       if (!o || typeof o !== 'object' || d > 16) return;
       if (Array.isArray(o)) { for (const x of o) walk(x, d + 1); return; }
@@ -64,39 +124,61 @@
         if (p && !seen.has(p.id)) { seen.add(p.id); out.push(p); return; }
       }
       for (const k in o) walk(o[k], d + 1);
-    })(json, 0);
+    })(root, 0);
     return out;
   }
   async function fetchPage(job, page, ctl) {
     const { lat, lon } = loc();
-    if (!lat || !lon) { noLoc = true; return []; }
+    if (!lat || !lon) { noLoc = true; lastFetchError = 'No delivery location found. Open blinkit.com, set your delivery address, then scan again (or enter latitude and longitude in the sidebar).'; return pageResult([], false, lastFetchError); }
     const offset = (page - 1) * 15, pi = String(page - 1);
     let url, body;
     if (job.kind === 'search') {
       url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(job.q) + '&search_type=type_to_search&page_index=' + pi + '&offset=' + offset + '&limit=15&oos_visibility=true&sort=discount_desc';
-      body = { query: job.q, q: job.q, search_query: job.q, page_index: pi, offset: String(offset), limit: '15', oos_visibility: true, sort: 'discount_desc' };
+      body = { query: job.q, q: job.q, search_query: job.q, page_index: page - 1, offset, limit: 15, oos_visibility: 'true', sort: 'discount_desc' };
     } else {
+      // Full listing body: Blinkit answers the short form too, but the full form
+      // (collection filters/properties, snippet types, totals) is what the site
+      // itself sends and is the shape that reliably returns product widgets.
       url = 'https://blinkit.com/v1/layout/listing_widgets?collection_uuid=' + encodeURIComponent(job.uuid) + '&collection_group_id=' + job.gid + '&sort=discount_desc';
-      body = { offset: String(offset), limit: '15', collection_uuid: job.uuid, collection_group_id: job.gid, page_index: pi, oos_visibility: true, sort: 'discount_desc' };
+      body = { offset: String(offset), limit: '15', collection_filters: '[]', collection_group_id: job.gid, collection_properties: JSON.stringify([{ id: 4179, name: 'NEXT_PRODUCT_RECOMMENDATION', value: 'true' }]), collection_uuid: job.uuid, exclude_combos: 'false', last_snippet_type: 'product_card_snippet_type_2', last_widget_type: 'product_container', oos_visibility: 'true', page_index: pi, products: '[]', total_entities_processed: String(offset), total_pagination_items: String(15 * 200), applied_filters: null, sort: 'discount_desc' };
     }
-    let lastErr;
+    let lastErr, fellBack = false;
     await sleep(350 + Math.random() * 450); // Blinkit rate-limits bursts hard
     for (let a = 0; a < 5; a++) {
       if (ctl.stop) throw new Error('stopped');
       try {
         const r = await W.fetch(url, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', accept: '*/*', app_client: 'consumer_web', lat: String(lat), lon: String(lon) }, body: JSON.stringify(body) });
         if (r.status === 429) { await sleep(2500 * (a + 1) + Math.random() * 1000); continue; }
-        if (r.status >= 500) throw new Error('HTTP ' + r.status);
-        if (!r.ok) { noLoc = true; return []; }
-        return extract(await r.json(), job.g.name + ' › ' + job.name);
+        if (r.status >= 500) { await sleep(2000 * (a + 1)); continue; }
+        if (!r.ok) {
+          lastFetchError = classifyFetchError(r.status);
+          if (r.status === 403) { noLoc = true; return pageResult([], false, lastFetchError); }
+          return pageResult([], false, lastFetchError);
+        }
+        const items = extract(await r.json(), job.g.name + ' › ' + job.name);
+        // Fallback shape: a collection that returns nothing is retried once as a
+        // keyword search for the subcategory name, instead of showing nothing.
+        if (!items.length && !fellBack) {
+          const fb = searchFallbackFor(job);
+          if (fb) {
+            fellBack = true; job = fb;
+            url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(job.q) + '&search_type=type_to_search&page_index=0&offset=0&limit=15&oos_visibility=true&sort=discount_desc';
+            body = { query: job.q, q: job.q, search_query: job.q, page_index: 0, offset: 0, limit: 15, oos_visibility: 'true', sort: 'discount_desc' };
+            continue;
+          }
+        }
+        // Pages come back sorted by discount: stop when a page is short or its
+        // tail has fallen below the 50% cutoff instead of fetching empty pages.
+        return pageResult(items, items.length >= 15 && !cutoffReached(items));
       } catch (e) { lastErr = e; await sleep(700 * (a + 1)); }
     }
+    lastFetchError = (lastErr && lastErr.message) || 'rate limited';
     throw lastErr || new Error('rate limited');
   }
   const P = {
     key: 'bds_v1', hostRe: /(^|\.)blinkit\.com$/,
     workers: 2,
-    defaults: { groups: ['grocery', 'snacks', 'dairy'], lat: '', lon: '', depth: 1 },
+    defaults: { groups: ['grocery', 'snacks', 'dairy'], lat: '', lon: '', depth: 2 },
     jobs: st => {
       const jobs = [];
       for (const g of GROUPS) {
@@ -107,12 +189,50 @@
     },
     fetchPage,
     noLocation: () => noLoc,
+    lastError: () => lastFetchError,
     noLocMsg: 'No results. Open blinkit.com, set your delivery address, then scan again (or enter latitude and longitude in the sidebar).',
     locCheck: () => { const l = loc(); return !!(l.lat && l.lon); },
     locUI: (st, e) => `<label class="row" style="margin-bottom:8px"><span>Latitude</span><input class="fld" style="width:120px" data-in="lat" placeholder="auto" value="${e(st.lat)}" inputmode="decimal"></label>
   <label class="row" style="margin-bottom:8px"><span>Longitude</span><input class="fld" style="width:120px" data-in="lon" placeholder="auto" value="${e(st.lon)}" inputmode="decimal"></label>`,
     locInput: (k, v) => { if (k === 'lat' || k === 'lon') { store[k] = v.replace(/[^\d.\-]/g, '').slice(0, 12); save(); return true; } return false; }
   };
+  // ── Fallback: collection job returned nothing — retry it as a keyword search ──
+  // Second API shape. listing_widgets can come back empty for a subcategory while
+  // the same name still matches products via /v1/layout/search, so a list job that
+  // yields nothing is retried once as a search job. Pure (decides the retry only);
+  // fetchPage does the retry. Covered by test-results-tab.js.
+  function searchFallbackFor(job) {
+    if (job && job.kind === 'list' && job.name) return { g: job.g, name: job.name, kind: 'search', q: job.name };
+    return null;
+  }
+  // ── Built-in self-test (sidebar button + api.runSelfTest) ───────────────────
+  // Pure: runs the parser over embedded fixtures, the discount cutoff and the error
+  // classifier, returns { ok, checks: [{ name, pass }] }. The click handler turns
+  // it into a toast. test-results-tab.js runs this same function in node.
+  function selfTest() {
+    const checks = [];
+    const env = { response: { widgets: [
+      { data: { name: { text: 'Test Atta 10 kg' }, normal_price: { text: '₹450' }, mrp: { text: '₹900' }, product_id: 101, brand_name: { text: 'TestBrand' }, variant: { text: '10 kg' }, image: { url: 'https://example.com/a.jpg' }, is_sold_out: false } },
+      { data: { name: 'Test Rice 5 kg', normal_price: '299', mrp: '599', product_id: 102, is_sold_out: true } },
+      { data: { name: 'Test Dal 1 kg', normal_price: { value: 50 }, mrp: { value: 1000 }, product_id: 104, is_sold_out: false } },
+      { data: { name: 'Test Oil 1 L', normal_price: { max: 99 }, mrp: { max: 999 }, product_id: 105, is_sold_out: false } },
+      { data: { name: 'No price here', product_id: 103 } }
+    ] } };
+    const got = extract(env, 'Self-test');
+    checks.push({ name: 'parser: response envelope unwrapped, 4 valid items (1 out of stock), price-less item skipped', pass: got.length === 4 && got[0].disc === 50 && got[1].inStock === false });
+    checks.push({ name: 'parser: highest-discount shapes keep their discount (value-keyed prices 95%, max-only prices 90%)', pass: got[2].disc === 95 && got[3].disc === 90 });
+    checks.push({ name: 'discount cutoff: a page whose tail is all below 50% stops paging; a 60% tail does not', pass: cutoffReached([{ disc: 40 }, { disc: 30 }, { disc: 45 }]) === true && cutoffReached([{ disc: 60 }, { disc: 30 }]) === false && cutoffReached([]) === true });
+    const fb = searchFallbackFor({ kind: 'list', name: 'Atta', g: {} });
+    checks.push({ name: 'fallback: an empty collection job retries as a keyword search for its own name', pass: !!fb && fb.kind === 'search' && fb.q === 'Atta' && searchFallbackFor({ kind: 'search', name: 'Atta' }) === null });
+    checks.push({ name: 'error classifier: 403 and 429 surface a message, not a blank grid', pass: classifyFetchError(403).indexOf('403') !== -1 && classifyFetchError(429).indexOf('429') !== -1 });
+    checks.push({ name: 'paging: a full page reports more=true, a short page more=false', pass: pageResult([1, 2], true).more === true && pageResult([1], false).more === false });
+    return { ok: checks.every(c => c.pass), checks };
+  }
+  // ── Export helpers ───────────────────────────────────────────────────────────
+  function toCSV(list) {
+    const rows = [['Title', 'Brand', 'Category', 'Price', 'MRP', 'Discount %', 'Saving', 'In stock', 'URL']].concat(list.map(p => [p.title, p.brand, p.cat, p.price, p.mrp, p.disc, p.save, p.inStock, p.url]));
+    return rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+  }
   // Live data can only be read from the store's own site, inside your logged-in tab.
   const OFFSITE = !P.hostRe.test(location.hostname);
 
@@ -132,7 +252,7 @@
 
   // ───────────────────────── State ─────────────────────────
   const S = { products: new Map(), scanning: false, done: 0, total: 0, errors: 0, ctl: { stop: false },
-    q: '', brand: '', cat: '', preset: '', pick: false, tgm: false, favOnly: false, newOnly: false, shown: 60, tab: 'best', panel: false, startedAt: 0 };
+    q: '', brand: '', cat: '', preset: '', pick: false, tgm: false, favOnly: false, newOnly: false, shown: 60, tab: 'best', panel: false, startedAt: 0, fetched: 0, fetchErrors: [], tried: false };
 
   // ───────────────────────── Scanner ─────────────────────────
   async function scan() {
@@ -141,13 +261,15 @@
     if (typeof captureUI === 'function') { autoScroll(); return; }
     const jobs = P.jobs(store);
     if (!jobs.length) { toast('Pick at least one category'); return; }
-    S.scanning = true; S.ctl = { stop: false }; S.done = 0; S.errors = 0; S.total = jobs.length; S.startedAt = Date.now();
+    S.scanning = true; S.ctl = { stop: false }; S.done = 0; S.errors = 0; S.fetched = 0; S.fetchErrors = []; S.total = jobs.length; S.startedAt = Date.now();
     S.products.clear(); S.shown = 60; render();
     const ctl = S.ctl, queue = jobs.slice();
     const runJob = async job => {
       try {
         for (let page = 1; page <= store.depth && !ctl.stop; page++) {
           const items = await P.fetchPage(job, page, ctl);
+          S.fetched += items.length;
+          if (items.error && !S.fetchErrors.includes(items.error)) S.fetchErrors.push(items.error);
           const fresh = ingest(items);
           scheduleRender();
           // Stop on the last page, or when a page adds nothing and does not promise more.
@@ -160,11 +282,11 @@
     if (queue.length) await runJob(queue.shift());
     const worker = async () => { while (queue.length && !ctl.stop) await runJob(queue.shift()); };
     await Promise.all(Array.from({ length: (typeof P !== 'undefined' && P.workers) || 4 }, worker));
-    S.scanning = false;
+    S.scanning = false; S.tried = true;
     recordPrices();
     store.lastScan = Date.now(); save(); render();
     notify();
-    if (P.noLocation() && !S.products.size) { toast(P.noLocMsg); return; }
+    if (P.noLocation() && !S.products.size) { toast(S.fetchErrors[0] || P.noLocMsg); return; }
     toast(ctl.stop ? 'Scan stopped' : `Scan complete · ${S.products.size} products` + (S.errors ? ` · ${S.errors} failed` : ''));
   }
 
@@ -536,7 +658,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   <label class="sw" style="margin-top:16px"><input type="checkbox" data-in="stockOnly" ${store.stockOnly ? 'checked' : ''}> In stock only</label>
   <label class="sw" style="margin-top:10px"><input type="checkbox" data-in="favOnly" ${S.favOnly ? 'checked' : ''}> Saved only</label>
   <label class="sw" style="margin-top:10px"><input type="checkbox" data-in="newOnly" ${S.newOnly ? 'checked' : ''}> New or price dropped</label></div>
- <div><h4>${ic('download', 15)}Export</h4><div class="chips"><button class="chip" data-act="csv">${ic('download', 14)}CSV</button><button class="chip" data-act="copyall">${ic('copy', 14)}Copy top 20</button><button class="chip" data-act="unhide">${ic('eyeoff', 14)}Unhide (${store.hidden.length})</button></div>
+ <div><h4>${ic('download', 15)}Export</h4><div class="chips"><button class="chip" data-act="csv">${ic('download', 14)}CSV</button><button class="chip" data-act="json">${ic('download', 14)}JSON</button><button class="chip" data-act="selftest">${ic('check', 14)}Self-test</button><button class="chip" data-act="copyall">${ic('copy', 14)}Copy top 20</button><button class="chip" data-act="unhide">${ic('eyeoff', 14)}Unhide (${store.hidden.length})</button></div>
   <p class="note" style="margin-top:14px"><kbd>/</kbd> search &nbsp;<kbd>S</kbd> scan &nbsp;<kbd>Esc</kbd> close</p></div>
 </aside>`;
   }
@@ -552,6 +674,10 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   function offsiteCard() {
     return `<div class="check"><h3>Open ${esc(PLATFORM)} to see live deals</h3><p class="note" style="font-size:14px">PriceDrop Hunter reads live prices inside your own ${esc(PLATFORM)} tab, so it can only fetch deals there.</p><p class="note" style="font-size:14px;margin-top:8px"><b>Userscript installed?</b> Hunter opens by itself on the store. <b>Using the bookmark?</b> After the store opens, tap your PriceDrop Hunter bookmark again on that page.</p><a class="btn" href="${STORE_URL}#pricedrop" target="_blank" rel="noopener" style="margin-top:16px;text-decoration:none">${ic('ext')}Open ${esc(PLATFORM)}</a></div>`;
   }
+  function scanStatus() {
+    const err = S.fetchErrors[0];
+    return `<p class="note" style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:14px">Last scan fetched <b>${S.fetched} product${S.fetched === 1 ? '' : 's'}</b> and showed none.${err ? `<br><b>Fetch problem:</b> ${esc(err)}` : '<br>Nothing matched, or every category came back empty — try fewer categories, a lower minimum discount, or scan again in a few minutes.'}</p>`;
+  }
   function checklist() {
     const capture = typeof captureUI === 'function';
     const loc = typeof fkLocCheck === 'function' ? fkLocCheck() : (typeof P !== 'undefined' && P.locCheck ? P.locCheck() : null);
@@ -561,7 +687,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
       [typeof GM_xmlhttpRequest === 'function' ? true : null, 'Userscript installed', 'Optional. Recommended for reliable Telegram alerts.'],
       [tgReady() ? true : null, 'Telegram connected', 'Optional. Press Telegram in the top bar to connect your bot.']
     ];
-    return `<div class="check"><h3>Before your first ${capture ? 'capture' : 'scan'}</h3>${rows.map(([ok, t, hint]) => `<div class="ck ${ok ? 'ok' : ok === false ? 'no' : 'q'}"><span>${ic(ok ? 'check' : ok === false ? 'x' : 'info', 15)}</span><div><b>${t}</b>${!ok && hint ? `<p>${hint}</p>` : ''}</div></div>`).join('')}<button class="btn" data-act="scan" style="margin-top:16px">${ic('scan')}${capture ? 'Auto-scroll page' : 'Scan deals'}</button></div>`;
+    return `<div class="check"><h3>Before your first ${capture ? 'capture' : 'scan'}</h3>${S.tried ? scanStatus() : ''}${rows.map(([ok, t, hint]) => `<div class="ck ${ok ? 'ok' : ok === false ? 'no' : 'q'}"><span>${ic(ok ? 'check' : ok === false ? 'x' : 'info', 15)}</span><div><b>${t}</b>${!ok && hint ? `<p>${hint}</p>` : ''}</div></div>`).join('')}<button class="btn" data-act="scan" style="margin-top:16px">${ic('scan')}${capture ? 'Auto-scroll page' : 'Scan deals'}</button></div>`;
   }
   function card(p, fav, qtyMap) {
     const inList = qtyMap[p.id];
@@ -787,9 +913,15 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
       case 'openlinks': Object.keys(store.list).map(i => S.products.get(i)).filter(p => p && p.url).forEach(p => window.open(p.url, '_blank', 'noopener')); break;
       case 'copyall': copy(filtered().slice(0, 20).map(p => `${p.disc}% off · ${p.title} · ${$inr(p.price)} (MRP ${$inr(p.mrp)})${p.url ? '\n' + p.url : ''}`).join('\n'), 'Top 20 deals copied'); break;
       case 'csv': {
-        const rows = [['Title', 'Brand', 'Category', 'Price', 'MRP', 'Discount %', 'Saving', 'In stock', 'URL']].concat(filtered().map(p => [p.title, p.brand, p.cat, p.price, p.mrp, p.disc, p.save, p.inStock, p.url]));
-        const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
-        const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a2.download = 'blinkit-deals.csv'; a2.click(); toast('CSV downloaded'); break;
+        const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([toCSV(filtered())], { type: 'text/csv' })); a2.download = 'blinkit-deals.csv'; a2.click(); toast('CSV downloaded'); break;
+      }
+      case 'json': {
+        const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([JSON.stringify(filtered(), null, 2)], { type: 'application/json' })); a2.download = 'blinkit-deals.json'; a2.click(); toast('JSON downloaded'); break;
+      }
+      case 'selftest': {
+        const r = selfTest();
+        toast(r.ok ? `Self-test passed · ${r.checks.length}/${r.checks.length} checks (parser, cutoff, fallback, error messages, paging)` : 'Self-test FAILED: ' + r.checks.filter(c => !c.pass).map(c => c.name).join('; '));
+        break;
       }
     }
   });
@@ -840,6 +972,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     fabRoot.querySelector('.n').textContent = n ? String(n) : '';
   }
   const api = {
+    runSelfTest() { return selfTest(); },
     show() { fab.style.display = 'none'; host.style.display = 'block'; if (!OFFSITE && !S.scanning && !S.products.size && typeof captureUI !== 'function') setTimeout(openPicker, 300); prevOverflow = document.documentElement.style.overflow; document.documentElement.style.overflow = 'hidden'; render(); },
     hide() { host.style.display = 'none'; document.documentElement.style.overflow = prevOverflow; updateFab(); placeFab(); fab.style.display = 'block'; },
     toggle() { host.style.display === 'none' ? api.show() : api.hide(); }
