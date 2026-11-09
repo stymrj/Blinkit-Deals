@@ -14,6 +14,7 @@ Scans the Blinkit keyword groups and collections you pick and shows the biggest 
 - **In-browser self-test:** a Self-test button in the sidebar runs the parser, the discount cutoff, the fallback decision and the error messages over built-in fixtures and reports pass/fail. Same checks run in `node test-results-tab.js`.
 - **JSON export** alongside CSV; CSV building is now a shared helper covered by the test.
 - **Bot:** `bot/platform.js` uses the full listing body and cutoff, retries empty collections as keyword searches, and scans **multiple pincodes** — set `BLINKIT_LOCATIONS="lat,lon;lat,lon"` to merge results across delivery areas, deduped by product id; a failing location is skipped instead of failing the run. `bot/config.json` adds Atta/Rice/Dal, Chips & Namkeen and Baby Care collections.
+- **Bookmark name fixed:** the install button now reads **Blinkit Deals** instead of the generic “PriceDrop Hunter”, so the bookmark you drag to your bookmarks bar is named after this store.
 
 ## Why v2 is stronger
 
@@ -42,9 +43,9 @@ The browser tool already had what a plain deal list doesn't, and v2 keeps all of
 
 [Watch the walkthrough video (MP4)](https://stymrj.github.io/PriceDrop-Hunter/media/install-demo.mp4)
 
-**Bookmarklet (desktop).** Run `node build.js`, open `index.html`, and drag the button to your bookmarks bar. Open blinkit.com and click the bookmark.
+**Bookmarklet (desktop).** Run `node build.js`, open `index.html`, and drag the **Blinkit Deals** button to your bookmarks bar. Open blinkit.com and click the bookmark.
 
-**Bookmarklet (mobile).** On the install page, tap **Copy mobile loader**. It is a bookmark of about 380 characters that loads the latest version from GitHub Pages, so it fits on any phone. Create a bookmark, paste it as the address, and run it from the address bar on blinkit.com. The full bookmarklet (about 64 KB, no network needed) is in `dist/bookmarklet.txt`.
+**Bookmarklet (mobile).** On the install page, tap **Copy mobile loader**. It is a bookmark of about 380 characters that loads the latest version from GitHub Pages, so it fits on any phone. Create a bookmark named **Blinkit Deals**, paste it as the address, and run it from the address bar on blinkit.com. The full bookmarklet (about 64 KB, no network needed) is in `dist/bookmarklet.txt`.
 
 **Userscript.** Install `dist/blinkit-deals.user.js` in Tampermonkey or Violentmonkey. A small Deals button appears on every blinkit.com page.
 

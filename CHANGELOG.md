@@ -1,6 +1,7 @@
 # Changelog
 
 ## v2.0.0 — 2026-11-08
+- Fixed (2026-11-09): install button now reads “Blinkit Deals” instead of the generic “PriceDrop Hunter”, so the dragged bookmark is named after this store instead of colliding with every other tool.
 
 - Full catalogue: 28 Blinkit collections (top 3 subcategories each) plus 8 keyword groups (was 3 collections); subcategory lists refreshable live from `POST /v1/layout/listing`.
 - Blank-results fix: empty scans now report the cause (no delivery location, HTTP 403 block, rate limit, server error) with a fetched-count status line, instead of an empty grid.
