@@ -6,8 +6,12 @@ const txt = v => (v && typeof v === 'object' ? v.text : v);
 function normalise(o, cat, { price, brandOf }) {
   const d = o.data, ci = (d.atc_action && d.atc_action.add_to_cart && d.atc_action.add_to_cart.cart_item) || {};
   const title = txt(d.name) || ci.display_name || ci.product_name;
-  const sell = price(txt(d.normal_price) || ci.price);
-  let mrp = price(txt(d.mrp) || ci.mrp);
+  // Price fields go to price() directly, not through txt(): txt() returns
+  // undefined for objects without a .text key, which dropped value-/max-
+  // keyed prices entirely. price() (bot/core.js) reads amount/value/max/
+  // text/min itself.
+  const sell = price(d.normal_price) || price(ci.price);
+  let mrp = price(d.mrp) || price(ci.mrp);
   if (!title || !sell) return null;
   if (mrp < sell) mrp = sell;
   const unit = txt(d.variant) || ci.unit || '';

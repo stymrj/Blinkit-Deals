@@ -14,7 +14,14 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const debounce = (f, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
 
-  const price = v => { if (v == null) return 0; if (typeof v === 'number') return v; const m = String(v).replace(/,/g, '').match(/\d+(\.\d+)?/); return m ? +m[0] : 0; };
+  // Prices arrive as a number, a "₹1,999" string, or an object keyed text /
+  // amount / value / max (per-unit {max, min} shapes carry the selling price
+  // in .max, falling back to .min). Read every key instead of only .text: a
+  // price read as 0 either drops the item outright (no selling price) or
+  // flattens its MRP to the selling price, which computes disc 0 — and a
+  // page whose tail parses to disc 0 trips the 50% cutoff, so paging stops
+  // and later pages (with real high discounts) are never fetched.
+  const price = v => { if (v == null) return 0; if (typeof v === 'number') return v; if (typeof v === 'object') { for (const k of ['amount', 'value', 'max', 'text', 'defaultValue']) { const p = price(v[k]); if (p > 0) return p; } if (v.min != null) { const p = price(v.min); if (p > 0) return p; } return 0; } const m = String(v).replace(/,/g, '').match(/\d+(\.\d+)?/); return m ? +m[0] : 0; };
   const guessBrand = t => (String(t).trim().split(/\s+/)[0] || '').replace(/[^\w&'-]/g, '');
   const EXCLUDED = [];
   const allowed = p => { const t = p.title.toLowerCase(); return !EXCLUDED.some(k => t.includes(k)); };
@@ -91,8 +98,8 @@
   function normalise(o, cat) {
     const d = o.data, ci = (d.atc_action && d.atc_action.add_to_cart && d.atc_action.add_to_cart.cart_item) || {};
     const title = txt(d.name) || ci.display_name || ci.product_name;
-    const sell = price(txt(d.normal_price) || ci.price);
-    let mrp = price(txt(d.mrp) || ci.mrp);
+    const sell = price(d.normal_price) || price(ci.price);
+    let mrp = price(d.mrp) || price(ci.mrp);
     if (!title || !sell) return null;
     if (mrp < sell) mrp = sell;
     const unit = txt(d.variant) || ci.unit || '';
@@ -207,10 +214,13 @@
     const env = { response: { widgets: [
       { data: { name: { text: 'Test Atta 10 kg' }, normal_price: { text: '₹450' }, mrp: { text: '₹900' }, product_id: 101, brand_name: { text: 'TestBrand' }, variant: { text: '10 kg' }, image: { url: 'https://example.com/a.jpg' }, is_sold_out: false } },
       { data: { name: 'Test Rice 5 kg', normal_price: '299', mrp: '599', product_id: 102, is_sold_out: true } },
+      { data: { name: 'Test Dal 1 kg', normal_price: { value: 50 }, mrp: { value: 1000 }, product_id: 104, is_sold_out: false } },
+      { data: { name: 'Test Oil 1 L', normal_price: { max: 99 }, mrp: { max: 999 }, product_id: 105, is_sold_out: false } },
       { data: { name: 'No price here', product_id: 103 } }
     ] } };
     const got = extract(env, 'Self-test');
-    checks.push({ name: 'parser: response envelope unwrapped, 2 valid items (1 out of stock), price-less item skipped', pass: got.length === 2 && got[0].disc === 50 && got[1].inStock === false });
+    checks.push({ name: 'parser: response envelope unwrapped, 4 valid items (1 out of stock), price-less item skipped', pass: got.length === 4 && got[0].disc === 50 && got[1].inStock === false });
+    checks.push({ name: 'parser: highest-discount shapes keep their discount (value-keyed prices 95%, max-only prices 90%)', pass: got[2].disc === 95 && got[3].disc === 90 });
     checks.push({ name: 'discount cutoff: a page whose tail is all below 50% stops paging; a 60% tail does not', pass: cutoffReached([{ disc: 40 }, { disc: 30 }, { disc: 45 }]) === true && cutoffReached([{ disc: 60 }, { disc: 30 }]) === false && cutoffReached([]) === true });
     const fb = searchFallbackFor({ kind: 'list', name: 'Atta', g: {} });
     checks.push({ name: 'fallback: an empty collection job retries as a keyword search for its own name', pass: !!fb && fb.kind === 'search' && fb.q === 'Atta' && searchFallbackFor({ kind: 'search', name: 'Atta' }) === null });

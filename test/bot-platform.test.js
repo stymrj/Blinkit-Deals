@@ -4,18 +4,14 @@
 // keyword-search fallback, and multi-pincode merging/dedupe. No network.
 const path = require('path');
 const platform = require(path.join(__dirname, '..', 'bot', 'platform.js'));
+// The production price() from bot/core.js (the ctx the bot actually runs
+// with) — the test must exercise the real function, not a copy of it.
+const { price } = require(path.join(__dirname, '..', 'bot', 'core.js'));
 let pass = 0, fail = 0;
 function check(name, ok, extra) {
   if (ok) { pass++; console.log('  ok - ' + name); }
   else { fail++; console.log('  FAIL - ' + name + (extra ? ' :: ' + extra : '')); }
 }
-const price = v => {
-  if (v == null) return 0;
-  if (typeof v === 'number') return v;
-  if (typeof v === 'object') { for (const k of ['value', 'amount', 'text', 'defaultValue']) { const p = price(v[k]); if (p > 0) return p; } return 0; }
-  const m = String(v).replace(/,/g, '').match(/\d+(\.\d+)?/);
-  return m ? +m[0] : 0;
-};
 const brandOf = t => (String(t).trim().split(/\s+/)[0] || '').replace(/[^\w&'-]/g, '');
 function resp(o) {
   const status = o.status || 200;
@@ -83,6 +79,24 @@ const kwJob = { g: { name: 'Grocery & Staples' }, sub: ['atta', 'Atta'] };
   c.fetch = async url => { seenUrl = String(url); return resp({ json: { response: { widgets: [mkItem(401, 60)] } } }); };
   r = await platform.fetchPage(kwJob, 1, c);
   check('keyword job uses /v1/layout/search with sort=discount_desc', seenUrl.indexOf('/v1/layout/search?q=atta') !== -1 && seenUrl.indexOf('sort=discount_desc') !== -1, seenUrl);
+
+  // 8. highest-discount edge shapes: value-/max-keyed prices must parse, and
+  // a page whose tail is true-90%+ items in odd shapes must not trip the
+  // 50% cutoff (more=true, so the bot keeps paging).
+  c = ctx({ BLINKIT_LAT: '28.61', BLINKIT_LON: '77.20' });
+  c.fetch = async () => resp({ json: { response: { widgets: [
+    { data: { name: { text: 'Bot Value Price Dal' }, normal_price: { value: 50 }, mrp: { value: 1000 }, product_id: 910003, is_sold_out: false } },
+    { data: { name: { text: 'Bot Max Price Oil' }, normal_price: { max: 99 }, mrp: { max: 999 }, product_id: 910004, is_sold_out: false } }
+  ] } } });
+  r = await platform.fetchPage(listJob, 1, c);
+  check('bot edge shapes: both items extracted with true discounts', r.length === 2 && (r.find(p => p.id === '910003') || {}).disc === 95 && (r.find(p => p.id === '910004') || {}).disc === 90, 'len ' + r.length);
+  const tailPage = { response: { widgets: [...Array.from({ length: 12 }, (_, i) => mkItem(920000 + i, 60)),
+    { data: { name: { text: 'Bot Cutoff Tail A' }, normal_price: { text: '₹50' }, mrp: { value: 1000 }, product_id: 920100, is_sold_out: false } },
+    { data: { name: { text: 'Bot Cutoff Tail B' }, normal_price: { text: '₹99' }, mrp: { max: 999 }, product_id: 920101, is_sold_out: false } },
+    { data: { name: { text: 'Bot Cutoff Tail C' }, normal_price: 80, mrp: { value: 1000 }, product_id: 920102, is_sold_out: false } }] } };
+  c.fetch = async () => resp({ json: tailPage });
+  r = await platform.fetchPage(listJob, 1, c);
+  check('bot cutoff page: 15 items, tail true discounts, more=true', r.length === 15 && r.more === true && r.slice(-3).map(p => p.disc).join(',') === '95,90,92', 'len ' + r.length + ' more ' + r.more);
 
   console.log('\n' + (fail ? 'FAIL: ' + fail + ' check(s) failed, ' + pass + ' passed' : 'PASS: all ' + pass + ' checks passed'));
   process.exit(fail ? 1 : 0);

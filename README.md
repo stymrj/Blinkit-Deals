@@ -15,6 +15,7 @@ Scans the Blinkit keyword groups and collections you pick and shows the biggest 
 - **JSON export** alongside CSV; CSV building is now a shared helper covered by the test.
 - **Bot:** `bot/platform.js` uses the full listing body and cutoff, retries empty collections as keyword searches, and scans **multiple pincodes** — set `BLINKIT_LOCATIONS="lat,lon;lat,lon"` to merge results across delivery areas, deduped by product id; a failing location is skipped instead of failing the run. `bot/config.json` adds Atta/Rice/Dal, Chips & Namkeen and Baby Care collections.
 - **Bookmark name fixed:** the install button now reads **Blinkit Deals** instead of the generic “PriceDrop Hunter”, so the bookmark you drag to your bookmarks bar is named after this store.
+- **Highest-discount fix:** the parser now reads every price shape the API sends — prices keyed `value` / `max` / `text` instead of only `{text}`, and MRP as a plain number or string. Before, those items dropped entirely (no selling price parsed), or parsed to 0% off when only the MRP was oddly shaped — and a page whose tail parsed to 0% tripped the 50% discount cutoff, so paging stopped and later pages were never fetched. The same fix is in the Telegram bot path. Covered by `fixtures/sample-high-discount.json` and section 7 of `node test-results-tab.js`.
 
 ## Why v2 is stronger
 

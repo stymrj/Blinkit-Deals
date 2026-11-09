@@ -44,6 +44,11 @@ const uStart = src.indexOf('const UNITS =');
 const unitsSrc = src.slice(uStart, src.indexOf('};', uStart) + 2);
 const unitOf = eval('(function () {\n' + unitsSrc + '\n' + grabFn('unitOf') + '\nreturn unitOf; })();');
 
+// ---- grab the results-tab sort (byDisc) the Best-deals row uses ----
+const byDiscMatch = src.match(/const byDisc = (\(a, b\) => [^;]+);/);
+if (!byDiscMatch) throw new Error('byDisc missing in src/deals.js');
+const byDisc = eval(byDiscMatch[1]);
+
 // ---- response stub ----
 function resp(o) {
   const status = o.status || 200;
@@ -141,6 +146,32 @@ return { fetchPage };
 })();`);
   r = await noLocLib.fetchPage(listJob, 1, { stop: false });
   check('no lat/lon: 0 items + location error attached', r.length === 0 && /location/i.test(r.error || ''), 'error=' + r.error);
+
+  console.log('== 7. highest-discount fixture: 85-95% off items render, highest first, cutoff not tripped ==');
+  const hd = JSON.parse(fs.readFileSync(path.join(ROOT, 'fixtures/sample-high-discount.json'), 'utf8'));
+  const hdItems = lib.extract(hd, 'High-discount');
+  check('high-discount fixture: all 8 items extracted (none dropped by the parser)', hdItems.length === 8, 'got ' + hdItems.length);
+  const byHdId = {}; hdItems.forEach(p => { byHdId[p.id] = p; });
+  check('value-keyed prices read .value, disc 95%', byHdId['910003'].price === 50 && byHdId['910003'].disc === 95);
+  check('max-only prices read .max, disc 90%', byHdId['910004'].price === 99 && byHdId['910004'].disc === 90);
+  check('out-of-stock 80% item still parses (hidden only by the stock filter, not the parser)', byHdId['910007'].disc === 80 && byHdId['910007'].inStock === false);
+  check('no MRP stays disc 0 (no discount signal to invent)', byHdId['910008'].disc === 0);
+  // Same gate the UI's filtered() applies: in stock + disc >= minDisc 30.
+  const hdVisible = hdItems.filter(p => p.inStock && p.disc >= 30).sort(byDisc);
+  check('6 of 8 pass the min-discount-30 + in-stock gate', hdVisible.length === 6, 'visible ' + hdVisible.length);
+  check('highest discount renders FIRST in the results tab (95% item first)', hdVisible[0].id === '910003', 'first ' + hdVisible[0].id);
+  const hdCards = renderCards(hdVisible);
+  const firstCard = hdCards.split('<article')[1] || '';
+  check('first rendered card is the 95% off item', firstCard.indexOf('95% OFF') !== -1 && firstCard.indexOf('High Discount Value Keyed Price Dal 1 kg') !== -1);
+  // A page whose tail is true-90%+ items in odd price shapes must not trip
+  // the 50% cutoff: before the fix the tail parsed to disc 0 and paging stopped.
+  const tailPage = { response: { widgets: [...Array.from({ length: 12 }, (_, i) => mkItem(920000 + i, 60)),
+    { data: { name: { text: 'Cutoff Tail A' }, normal_price: { text: '₹50' }, mrp: { value: 1000 }, product_id: 920100, is_sold_out: false } },
+    { data: { name: { text: 'Cutoff Tail B' }, normal_price: { text: '₹99' }, mrp: { max: 999 }, product_id: 920101, is_sold_out: false } },
+    { data: { name: { text: 'Cutoff Tail C' }, normal_price: 80, mrp: { value: 1000 }, product_id: 920102, is_sold_out: false } }] } };
+  const tailParsed = lib.extract(tailPage, 'Cutoff');
+  check('cutoff page: tail parses to its true discounts [95, 90, 92]', tailParsed.slice(-3).map(p => p.disc).join(',') === '95,90,92', 'tail ' + tailParsed.slice(-3).map(p => p.disc).join(','));
+  check('cutoff page: cutoff NOT reached, paging continues (more=true)', tailParsed.length === 15 && lib.cutoffReached(tailParsed) === false, 'len ' + tailParsed.length);
 
   console.log('\n' + (fail ? 'FAIL: ' + fail + ' check(s) failed, ' + pass + ' passed' : 'PASS: all ' + pass + ' checks passed (70 items -> 70 cards)'));
   process.exit(fail ? 1 : 0);
