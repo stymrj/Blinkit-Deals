@@ -1,0 +1,108 @@
+# deals-feed.yml — template workflow for all 9 scanner repos
+#
+# Install: copy this file to `.github/workflows/deals-feed.yml` in each
+# scanner repo (after applying that repo's --json patch from
+# scanner-patches/<Repo>/). It is separate from the existing
+# `telegram-bot.yml` so the alert loop is untouched.
+#
+# What it does, once a day at 03:00 UTC (08:30 IST):
+#   1. Runs the scanner in --json mode (same scan, no Telegram, no state).
+#   2. Extracts the JSON object (always the LAST stdout line — the scanners
+#      keep their normal log lines on stdout) into deals.json.
+#   3. Validates deals.json parses as JSON with a `deals` array.
+#   4. Commits it to the `feed` branch (force-pushed; the branch holds only
+#      deals.json, one commit per day at most) via GITHUB_TOKEN.
+# The subscriber bot then fetches
+#   https://raw.githubusercontent.com/stymrj/<Repo>/feed/deals.json
+# at ~08:45 IST and sends the digest at 09:00 IST.
+#
+# Per-repo differences (edit ONLY the "Scan" step's command + setup step):
+#   Node core.js repos (Amazon, Blinkit, Flipkart, BigBasket, Myntra, Croma):
+#     setup-node 20; run: node bot/run.js --json | tail -n 1 > deals.json
+#     env: the repo's usual platform secrets (e.g. AMAZON_COOKIE,
+#       AMAZON_BRAND_ID). NO Telegram vars needed in --json mode.
+#   Zepto:  setup-node 20; run: node bot-v2/src/bot.js --json | tail -n 1 > deals.json
+#     env: ZEPTO_COOKIE, ZEPTO_XSRF_TOKEN (as in telegram-bot.yml).
+#   Swiggy: setup-node 20; run: node bot-v2/src/bot.js --json | tail -n 1 > deals.json
+#     env: SWIGGY_COOKIE, SWIGGY_STORE_ID / SWIGGY_PRIMARY_STORE_ID /
+#       SWIGGY_SECONDARY_STORE_ID (as in telegram-bot.yml).
+#   JioMart: setup-python 3.12 + pip install -r bot-v2/requirements.txt
+#     run: python bot-v2/bot.py --once --json | tail -n 1 > deals.json
+#     env: JIOMART_PINCODE / JIOMART_PINCODES, JIOMART_BEARER only if 401/403.
+#   MIN_DISCOUNT: set as a repo variable (vars.MIN_DISCOUNT) or leave unset
+#     for the scanner default (50). The feed floor is the env value; the
+#     subscriber bot re-filters at the same floor.
+#
+# Caveats (see scanner-patches/README.md):
+#   - Zepto feed covers staples + Blockbuster only; Swiggy feed is gated by
+#     per-campaign floors (60-85%), so few 50-59% deals appear from Swiggy.
+#   - The `feed` branch is force-pushed daily; do not commit anything else
+#     to it. raw.githubusercontent.com may cache for a few minutes; the
+#     08:30 publish -> 08:45 fetch gap covers that.
+
+name: Publish daily deals feed
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # 03:00 UTC = 08:30 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to push the feed branch
+
+concurrency:
+  group: deals-feed
+  cancel-in-progress: false
+
+jobs:
+  feed:
+    # Same gate as telegram-bot.yml: set the repository variable
+    # BOT_ENABLED to "true" to let scheduled runs start.
+    if: github.event_name == 'workflow_dispatch' || vars.BOT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MIN_DISCOUNT: ${{ vars.MIN_DISCOUNT }}
+      BLINKIT_LAT: ${{ secrets.BLINKIT_LAT }}
+      BLINKIT_LON: ${{ secrets.BLINKIT_LON }}
+      BLINKIT_COOKIE: ${{ secrets.BLINKIT_COOKIE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Node repos (Amazon / Blinkit / Flipkart / BigBasket / Myntra /
+      # Croma / Zepto / Swiggy):
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # JioMart only (delete the setup-node step above, use this instead):
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.12'
+      # - name: Install dependencies
+      #   run: pip install -r bot-v2/requirements.txt
+
+      # EDIT THIS COMMAND per repo (see the table at the top of this file).
+      - name: Scan and emit feed JSON
+        run: node bot/run.js --json | tail -n 1 > deals.json
+
+      # JioMart only: replace this step with
+      #   run: python -m json.tool deals.json > /dev/null
+      - name: Validate deals.json
+        run: |
+          node -e "const j=require('./deals.json'); if(!Array.isArray(j.deals)) throw new Error('no deals array'); if(typeof j.store!=='string'||typeof j.generatedAt!=='string') throw new Error('bad feed header'); console.log(j.store+': '+j.deals.length+' deals @ '+j.generatedAt)"
+
+      - name: Publish to feed branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B feed
+          git add deals.json
+          if git diff --cached --quiet; then
+            echo "feed unchanged"
+          else
+            git commit -m "feed: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin feed --force
+          fi

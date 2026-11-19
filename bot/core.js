@@ -89,8 +89,9 @@ async function run(platform, argv = process.argv.slice(2)) {
   const env = process.env;
   const fetch = platform.fetch || globalThis.fetch;
   const dry = argv.includes('--dry-run') || env.DRY_RUN === 'true';
+  const jsonMode = argv.includes('--json');
   const token = env.TELEGRAM_BOT_TOKEN, chat = env.TELEGRAM_CHAT_ID;
-  if (!dry && (!token || !chat)) {
+  if (!jsonMode && !dry && (!token || !chat)) {
     console.log('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set, so there is nothing to do. See README → Telegram bot.');
     return 0;
   }
@@ -127,6 +128,23 @@ async function run(platform, argv = process.argv.slice(2)) {
   });
   if (blocked) console.error('Stopped: ' + blocked);
   console.log(`Scanned ${jobs.length} aisles · ${found.size} products${failed ? ` · ${failed} failed` : ''}`);
+  // --json feed mode (subscriber-bot digest): emit the top deals as one JSON
+  // object and exit. No Telegram send, no state/dedupe write, no digest-date
+  // gating — the feed is a snapshot of today's scan, not an alert stream.
+  // A blocked session (dead cookie) fails loudly instead of publishing a
+  // stale/empty feed. The JSON object is always the LAST stdout line; the
+  // workflow extracts it with `tail -n 1` (other console.log lines stay).
+  if (jsonMode) {
+    if (blocked) return 1;
+    const minJson = +env.MIN_DISCOUNT || 50;
+    const deals = [...found.values()]
+      .filter(p => p.inStock && p.disc >= minJson)
+      .sort((a, b) => b.disc - a.disc || (b.mrp - b.price) - (a.mrp - a.price))
+      .slice(0, 20)
+      .map(p => ({ title: p.title, price: p.price, mrp: p.mrp, disc: Math.round(p.disc), url: p.url || '', cat: p.cat || '' }));
+    console.log(JSON.stringify({ store: platform.label, generatedAt: new Date().toISOString(), deals }));
+    return 0;
+  }
   if (!found.size) return blocked || failed === jobs.length ? 1 : 0;
 
   const stateFile = path.join(ROOT, 'data', 'state.json');
