@@ -2,7 +2,7 @@ name: Telegram deal alerts
 
 on:
   schedule:
-    - cron: '1,31 3-18 * * *'   # every 30 minutes, 08:31 to 00:01 IST
+    - cron: '1,31 3-18 * * *'   # every 30 min, 03:01-18:31 UTC = 08:31-00:01 IST (GitHub cron is UTC)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -29,11 +29,14 @@ jobs:
       BLINKIT_LAT: ${{ secrets.BLINKIT_LAT }}
       BLINKIT_LON: ${{ secrets.BLINKIT_LON }}
       BLINKIT_COOKIE: ${{ secrets.BLINKIT_COOKIE }}
+      BLINKIT_LOCATIONS: ${{ vars.BLINKIT_LOCATIONS }}
       MIN_DISCOUNT: ${{ vars.MIN_DISCOUNT }}
       THRESHOLDS: ${{ vars.THRESHOLDS }}
       GROUPS: ${{ vars.GROUPS }}
       PAGES: ${{ vars.PAGES }}
       DIGEST_HOUR_IST: ${{ vars.DIGEST_HOUR_IST }}
+      MAX_WORKERS: ${{ vars.MAX_WORKERS }}
+      MAX_ALERTS: ${{ vars.MAX_ALERTS }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
       - uses: actions/checkout@v4

@@ -92,8 +92,8 @@ async function run(platform, argv = process.argv.slice(2)) {
   const jsonMode = argv.includes('--json');
   const token = env.TELEGRAM_BOT_TOKEN, chat = env.TELEGRAM_CHAT_ID;
   if (!jsonMode && !dry && (!token || !chat)) {
-    console.log('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set, so there is nothing to do. See README → Telegram bot.');
-    return 0;
+    console.error('TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set. See README → Telegram bot.');
+    return 1;
   }
   const missing = (platform.required || []).filter(k => !env[k]);
   if (missing.length) { console.error('Missing settings: ' + missing.join(', ') + '. See README → Telegram bot.'); return 1; }
