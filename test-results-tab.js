@@ -124,6 +124,26 @@ function mkItem(id, disc, oos) {
   check('full page, tail below 50%: 15 items, more=false', r.length === 15 && r.more === false, 'more ' + r.more);
   r = await lib.fetchPage(listJob, 1, { stop: false, minDisc: 30 });
   check('same page with a 30% minimum continues', r.more === true);
+  const scanForAlerts = eval(`(async function (P, store) {
+    const OFFSITE = false, S = { products: new Map() }, tgReady = () => !!(store.tg.token && store.tg.chat);
+    const toast = () => {}, render = toast, scheduleRender = toast, save = toast, recordPrices = toast;
+    const ingest = items => items.forEach(p => S.products.set(p.id, p));
+    let notified = [];
+    const notify = () => { notified = [...S.products.keys()]; };
+    const scan = async ${grabFn('scan')};
+    await scan();
+    return notified;
+  })`);
+  global.window.fetch = async (_url, opts) => resp({ json: { response: { widgets:
+    JSON.parse(opts.body).offset === 0 ? Array.from({ length: 15 }, (_, i) => mkItem(600 + i, 45)) : [mkItem(615, 40)]
+  } } });
+  const scanPlatform = { jobs: () => [searchJob], fetchPage: lib.fetchPage, workers: 1 };
+  const scanStore = { minDisc: 50, depth: 2, tg: { on: true, minDisc: 35, token: 'test', chat: 'test' } };
+  check('browser scan gives Telegram the 40%-off deal on page two despite a 50% display minimum',
+    (await scanForAlerts(scanPlatform, scanStore)).includes('615'));
+  scanStore.tg.on = false;
+  check('with Telegram disabled, browser scan still stops at the 50% display minimum',
+    !(await scanForAlerts(scanPlatform, scanStore)).includes('615'));
   // 6c. collection returns nothing -> retried once as keyword search for 'Atta'.
   global.window.fetch = async url => (String(url).indexOf('/v1/layout/search') !== -1
     ? resp({ json: { response: { widgets: [mkItem(301, 65), mkItem(302, 55)] } } })

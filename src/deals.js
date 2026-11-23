@@ -253,7 +253,8 @@
     if (typeof captureUI === 'function') { autoScroll(); return; }
     const jobs = P.jobs(store);
     if (!jobs.length) { toast('Pick at least one category'); return; }
-    S.scanning = true; S.ctl = { stop: false, minDisc: store.minDisc }; S.done = 0; S.errors = 0; S.fetched = 0; S.fetchErrors = []; S.total = jobs.length; S.startedAt = Date.now();
+    const minDisc = store.tg.on && tgReady() ? Math.min(store.minDisc, store.tg.minDisc) : store.minDisc;
+    S.scanning = true; S.ctl = { stop: false, minDisc }; S.done = 0; S.errors = 0; S.fetched = 0; S.fetchErrors = []; S.total = jobs.length; S.startedAt = Date.now();
     S.products.clear(); S.shown = 60; render();
     const ctl = S.ctl, queue = jobs.slice();
     const runJob = async job => {
