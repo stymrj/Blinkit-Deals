@@ -101,11 +101,12 @@ async function run(platform, argv = process.argv.slice(2)) {
   const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
   const only = String(env.GROUPS || '').split(',').map(s => s.trim()).filter(Boolean);
   const per = thresholds(env), base = +env.MIN_DISCOUNT || 0;
+  const minJson = base || 50;
   const pages = Math.max(1, Math.min(5, +env.PAGES || cfg.pages || 1));
   const jobs = [];
   for (const g of cfg.groups) {
     if (only.length && !only.includes(g.id)) continue;
-    const min = per[g.id] || base || g.minDiscount || cfg.minDiscount || 60;
+    const min = jsonMode ? minJson : per[g.id] || base || g.minDiscount || cfg.minDiscount || 60;
     for (const sub of g.subs) jobs.push({ g, sub, min });
   }
 
@@ -113,9 +114,10 @@ async function run(platform, argv = process.argv.slice(2)) {
   let failed = 0, blocked = '';
   const ctx = { env, fetch, sleep, price, brandOf };
   await pool(jobs, +env.MAX_WORKERS || platform.workers || 4, async job => {
+    const searchLocations = new Set();
     for (let page = 1; page <= pages && !blocked; page++) {
       let items;
-      try { items = await platform.fetchPage(job, page, ctx); }
+      try { items = await platform.fetchPage(job, page, ctx, searchLocations); }
       catch (e) {
         if (e.blocked) blocked = e.message; else { failed++; console.log(`  ! ${job.g.name} › ${job.sub[1]}: ${e.message}`); }
         return;
@@ -123,7 +125,7 @@ async function run(platform, argv = process.argv.slice(2)) {
       for (const p of items) { if (!found.has(p.id) || job.min < found.get(p.id).min) found.set(p.id, Object.assign(p, { min: job.min })); }
       if (items.more === false || !items.length) break;
       // Only stores that return results sorted by discount can stop early.
-      if (platform.sortedByDiscount && (items.length < (platform.pageSize || 10) || items[items.length - 1].disc < job.min)) break;
+      if (items.more !== true && platform.sortedByDiscount && (items.length < (platform.pageSize || 10) || items[items.length - 1].disc < job.min)) break;
     }
   });
   if (blocked) console.error('Stopped: ' + blocked);
@@ -135,8 +137,7 @@ async function run(platform, argv = process.argv.slice(2)) {
   // stale/empty feed. The JSON object is always the LAST stdout line; the
   // workflow extracts it with `tail -n 1` (other console.log lines stay).
   if (jsonMode) {
-    if (blocked) return 1;
-    const minJson = +env.MIN_DISCOUNT || 50;
+    if (blocked || (!found.size && jobs.length > 0 && failed === jobs.length)) return 1;
     const deals = [...found.values()]
       .filter(p => p.inStock && p.disc >= minJson)
       .sort((a, b) => b.disc - a.disc || (b.mrp - b.price) - (a.mrp - a.price))

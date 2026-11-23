@@ -122,6 +122,28 @@ function mkItem(id, disc, oos) {
   global.window.fetch = async () => resp({ json: tailLow });
   r = await lib.fetchPage(listJob, 1, { stop: false });
   check('full page, tail below 50%: 15 items, more=false', r.length === 15 && r.more === false, 'more ' + r.more);
+  r = await lib.fetchPage(listJob, 1, { stop: false, minDisc: 30 });
+  check('same page with a 30% minimum continues', r.more === true);
+  const scanForAlerts = eval(`(async function (P, store) {
+    const OFFSITE = false, S = { products: new Map() }, tgReady = () => !!(store.tg.token && store.tg.chat);
+    const toast = () => {}, render = toast, scheduleRender = toast, save = toast, recordPrices = toast;
+    const ingest = items => items.forEach(p => S.products.set(p.id, p));
+    let notified = [];
+    const notify = () => { notified = [...S.products.keys()]; };
+    const scan = async ${grabFn('scan')};
+    await scan();
+    return notified;
+  })`);
+  global.window.fetch = async (_url, opts) => resp({ json: { response: { widgets:
+    JSON.parse(opts.body).offset === 0 ? Array.from({ length: 15 }, (_, i) => mkItem(600 + i, 45)) : [mkItem(615, 40)]
+  } } });
+  const scanPlatform = { jobs: () => [searchJob], fetchPage: lib.fetchPage, workers: 1 };
+  const scanStore = { minDisc: 50, depth: 2, tg: { on: true, minDisc: 35, token: 'test', chat: 'test' } };
+  check('browser scan gives Telegram the 40%-off deal on page two despite a 50% display minimum',
+    (await scanForAlerts(scanPlatform, scanStore)).includes('615'));
+  scanStore.tg.on = false;
+  check('with Telegram disabled, browser scan still stops at the 50% display minimum',
+    !(await scanForAlerts(scanPlatform, scanStore)).includes('615'));
   // 6c. collection returns nothing -> retried once as keyword search for 'Atta'.
   global.window.fetch = async url => (String(url).indexOf('/v1/layout/search') !== -1
     ? resp({ json: { response: { widgets: [mkItem(301, 65), mkItem(302, 55)] } } })
@@ -129,6 +151,18 @@ function mkItem(id, disc, oos) {
   r = await lib.fetchPage(listJob, 1, { stop: false });
   check('empty collection falls back to search: 2 items', r.length === 2, 'len ' + r.length);
   check('fallback items render as cards', (renderCards(r).match(/<article class="card"/g) || []).length === 2);
+  const fallbackCalls = [];
+  global.window.fetch = async (url, opts) => {
+    fallbackCalls.push([url, JSON.parse(opts.body).offset]);
+    return resp({ json: url.includes('/search') ? fullPage : { response: { widgets: [] } } });
+  };
+  r = await lib.fetchPage(listJob, 1, { stop: false });
+  check('full fallback page gives the scanner a search job for the next page', r.more === true && r.nextJob?.kind === 'search');
+  await lib.fetchPage(r.nextJob, 2, { stop: false });
+  check('fallback page 2 uses keyword search with offset 15', fallbackCalls.length === 3 && fallbackCalls[2][0].includes('/search?q=Atta') && fallbackCalls[2][1] === 15);
+  fallbackCalls.length = 0;
+  r = await lib.fetchPage(listJob, 2, { stop: false });
+  check('an exhausted collection does not restart at keyword page 1', r.more === false && fallbackCalls.length === 1 && fallbackCalls[0][0].includes('/listing_widgets'));
   // 6d. 429 once, then success -> retry recovers.
   let calls = 0;
   global.window.fetch = async () => { calls++; return calls === 1 ? resp({ status: 429 }) : resp({ json: fullPage }); };
@@ -138,6 +172,19 @@ function mkItem(id, disc, oos) {
   global.window.fetch = async () => resp({ status: 403 });
   r = await lib.fetchPage(listJob, 1, { stop: false });
   check('403: 0 items + error message attached', r.length === 0 && /403/.test(r.error || ''), 'error=' + r.error);
+  const realSetTimeout = global.setTimeout;
+  global.setTimeout = fn => queueMicrotask(fn);
+  try {
+    for (const status of [429, 503]) {
+      calls = 0;
+      global.window.fetch = async () => { calls++; return resp({ status }); };
+      r = await lib.fetchPage(searchJob, 1, { stop: false });
+      check('exhausted HTTP ' + status + ' retries preserve status for the scan UI',
+        calls === 5 && r.length === 0 && r.more === false && r.error.includes(String(status)));
+    }
+  } finally {
+    global.setTimeout = realSetTimeout;
+  }
   // 6f. no location -> error surfaced.
   global.window.fetch = async () => { throw new Error('fetch should not run without location'); };
   const noLocLib = eval(head + `

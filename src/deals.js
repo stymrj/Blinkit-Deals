@@ -31,8 +31,7 @@
   // Keyword groups search by name; collection groups below are the Nov 2026
   // Blinkit taxonomy (28 categories, top 3 subcategories each). Subcategory lists
   // can be refreshed live from POST /v1/layout/listing with a collection_uuid.
-  // Each collection job fetches page 1 sorted by discount; later pages stop once
-  // the last items on a page fall below the 50% discount cutoff.
+  // Collection pages are sorted by discount.
   const GROUPS = [
     KWG('grocery', 'Grocery & Staples', ['atta', 'rice', 'dal', 'oil', 'ghee', 'sugar', 'salt', 'masala']),
     KWG('snacks', 'Snacks & Sweets', ['chips', 'biscuits', 'namkeen', 'chocolate', 'ice cream', 'noodles']),
@@ -71,19 +70,13 @@
     { id: 'sweets', name: 'Sweets & Chocolates (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNjc=', subs: [['11414', 'Chocolates'], ['11415', 'Chocolate Packs'], ['18681', 'Chocolate Gift Pack']] },
     { id: 'tea', name: 'Tea, Coffee & Milk Drinks (collection)', uuid: 'OTg3NjU0MzIxMjM0NTMzNTA=', subs: [['11617', 'Tea'], ['11618', 'Coffee'], ['18677', 'Hot Chocolate']] }
   ];
-  let noLoc = false;
-  // Nov 2026 blank-results fix: a fetch that returns no data must say why (no location,
-  // 403 block, rate limit) instead of opening an empty grid. The last such message
-  // is kept here and shown in the empty state after a scan.
-  let lastFetchError = '';
-  // Server sorts every page by discount, so once the tail of a page drops below 50%
-  // off (or is all sold out) there is nothing worth fetching on later pages.
+  // Server sorts every page by discount, so use the scan's minimum to check the tail.
   const DISCOUNT_CUTOFF = 50;
   function pageResult(items, more, error) { items.more = more; if (error) items.error = error; return items; }
-  function cutoffReached(items) {
+  function cutoffReached(items, min = DISCOUNT_CUTOFF) {
     if (!items.length) return true;
     if (items.every(p => p.inStock === false)) return true;
-    return items.slice(-3).every(p => p.disc < DISCOUNT_CUTOFF);
+    return items.slice(-3).every(p => p.disc < min);
   }
   function classifyFetchError(status) {
     if (status === 403) return 'Blinkit blocked this request (HTTP 403). Set your delivery address on blinkit.com and retry from that tab; automated datacentre IPs are often blocked.';
@@ -127,9 +120,7 @@
     })(root, 0);
     return out;
   }
-  async function fetchPage(job, page, ctl) {
-    const { lat, lon } = loc();
-    if (!lat || !lon) { noLoc = true; lastFetchError = 'No delivery location found. Open blinkit.com, set your delivery address, then scan again (or enter latitude and longitude in the sidebar).'; return pageResult([], false, lastFetchError); }
+  function pageRequest(job, page) {
     const offset = (page - 1) * 15, pi = String(page - 1);
     let url, body;
     if (job.kind === 'search') {
@@ -142,38 +133,42 @@
       url = 'https://blinkit.com/v1/layout/listing_widgets?collection_uuid=' + encodeURIComponent(job.uuid) + '&collection_group_id=' + job.gid + '&sort=discount_desc';
       body = { offset: String(offset), limit: '15', collection_filters: '[]', collection_group_id: job.gid, collection_properties: JSON.stringify([{ id: 4179, name: 'NEXT_PRODUCT_RECOMMENDATION', value: 'true' }]), collection_uuid: job.uuid, exclude_combos: 'false', last_snippet_type: 'product_card_snippet_type_2', last_widget_type: 'product_container', oos_visibility: 'true', page_index: pi, products: '[]', total_entities_processed: String(offset), total_pagination_items: String(15 * 200), applied_filters: null, sort: 'discount_desc' };
     }
-    let lastErr, fellBack = false;
+    return { url, body };
+  }
+  async function fetchPage(job, page, ctl) {
+    const { lat, lon } = loc();
+    if (!lat || !lon) return pageResult([], false, 'No delivery location found. Open blinkit.com, set your delivery address, then scan again (or enter latitude and longitude in the sidebar).');
+    let { url, body } = pageRequest(job, page);
+    let lastErr, nextJob;
     await sleep(350 + Math.random() * 450); // Blinkit rate-limits bursts hard
     for (let a = 0; a < 5; a++) {
       if (ctl.stop) throw new Error('stopped');
       try {
         const r = await W.fetch(url, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', accept: '*/*', app_client: 'consumer_web', lat: String(lat), lon: String(lon) }, body: JSON.stringify(body) });
-        if (r.status === 429) { await sleep(2500 * (a + 1) + Math.random() * 1000); continue; }
-        if (r.status >= 500) { await sleep(2000 * (a + 1)); continue; }
-        if (!r.ok) {
-          lastFetchError = classifyFetchError(r.status);
-          if (r.status === 403) { noLoc = true; return pageResult([], false, lastFetchError); }
-          return pageResult([], false, lastFetchError);
+        if (r.status === 429 || r.status >= 500) {
+          lastErr = new Error(classifyFetchError(r.status));
+          if (a < 4) await sleep(r.status === 429 ? 2500 * (a + 1) + Math.random() * 1000 : 2000 * (a + 1));
+          continue;
         }
+        if (!r.ok) return pageResult([], false, classifyFetchError(r.status));
         const items = extract(await r.json(), job.g.name + ' › ' + job.name);
         // Fallback shape: a collection that returns nothing is retried once as a
         // keyword search for the subcategory name, instead of showing nothing.
-        if (!items.length && !fellBack) {
+        if (!items.length && page === 1) {
           const fb = searchFallbackFor(job);
           if (fb) {
-            fellBack = true; job = fb;
-            url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(job.q) + '&search_type=type_to_search&page_index=0&offset=0&limit=15&oos_visibility=true&sort=discount_desc';
-            body = { query: job.q, q: job.q, search_query: job.q, page_index: 0, offset: 0, limit: 15, oos_visibility: 'true', sort: 'discount_desc' };
+            nextJob = job = fb;
+            ({ url, body } = pageRequest(job, page));
+            a = -1;
             continue;
           }
         }
-        // Pages come back sorted by discount: stop when a page is short or its
-        // tail has fallen below the 50% cutoff instead of fetching empty pages.
-        return pageResult(items, items.length >= 15 && !cutoffReached(items));
-      } catch (e) { lastErr = e; await sleep(700 * (a + 1)); }
+        const result = pageResult(items, items.length >= 15 && !cutoffReached(items, ctl.minDisc));
+        if (nextJob) result.nextJob = nextJob;
+        return result;
+      } catch (e) { lastErr = e; if (a < 4) await sleep(700 * (a + 1)); }
     }
-    lastFetchError = (lastErr && lastErr.message) || 'rate limited';
-    throw lastErr || new Error('rate limited');
+    return pageResult([], false, lastErr.message);
   }
   const P = {
     key: 'bds_v1', hostRe: /(^|\.)blinkit\.com$/,
@@ -188,9 +183,6 @@
       return jobs;
     },
     fetchPage,
-    noLocation: () => noLoc,
-    lastError: () => lastFetchError,
-    noLocMsg: 'No results. Open blinkit.com, set your delivery address, then scan again (or enter latitude and longitude in the sidebar).',
     locCheck: () => { const l = loc(); return !!(l.lat && l.lon); },
     locUI: (st, e) => `<label class="row" style="margin-bottom:8px"><span>Latitude</span><input class="fld" style="width:120px" data-in="lat" placeholder="auto" value="${e(st.lat)}" inputmode="decimal"></label>
   <label class="row" style="margin-bottom:8px"><span>Longitude</span><input class="fld" style="width:120px" data-in="lon" placeholder="auto" value="${e(st.lon)}" inputmode="decimal"></label>`,
@@ -261,15 +253,20 @@
     if (typeof captureUI === 'function') { autoScroll(); return; }
     const jobs = P.jobs(store);
     if (!jobs.length) { toast('Pick at least one category'); return; }
-    S.scanning = true; S.ctl = { stop: false }; S.done = 0; S.errors = 0; S.fetched = 0; S.fetchErrors = []; S.total = jobs.length; S.startedAt = Date.now();
+    const minDisc = store.tg.on && tgReady() ? Math.min(store.minDisc, store.tg.minDisc) : store.minDisc;
+    S.scanning = true; S.ctl = { stop: false, minDisc }; S.done = 0; S.errors = 0; S.fetched = 0; S.fetchErrors = []; S.total = jobs.length; S.startedAt = Date.now();
     S.products.clear(); S.shown = 60; render();
     const ctl = S.ctl, queue = jobs.slice();
     const runJob = async job => {
       try {
         for (let page = 1; page <= store.depth && !ctl.stop; page++) {
           const items = await P.fetchPage(job, page, ctl);
+          if (items.nextJob) job = items.nextJob;
           S.fetched += items.length;
-          if (items.error && !S.fetchErrors.includes(items.error)) S.fetchErrors.push(items.error);
+          if (items.error) {
+            S.errors++;
+            if (!S.fetchErrors.includes(items.error)) S.fetchErrors.push(items.error);
+          }
           const fresh = ingest(items);
           scheduleRender();
           // Stop on the last page, or when a page adds nothing and does not promise more.
@@ -286,7 +283,7 @@
     recordPrices();
     store.lastScan = Date.now(); save(); render();
     notify();
-    if (P.noLocation() && !S.products.size) { toast(S.fetchErrors[0] || P.noLocMsg); return; }
+    if (!S.products.size && S.fetchErrors.length) { toast(S.fetchErrors[0]); return; }
     toast(ctl.stop ? 'Scan stopped' : `Scan complete · ${S.products.size} products` + (S.errors ? ` · ${S.errors} failed` : ''));
   }
 
