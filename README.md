@@ -8,9 +8,9 @@ Scans the Blinkit keyword groups and collections you pick and shows the biggest 
 
 - **Full catalogue:** 28 Blinkit collections (Baby Care, Bath & Body, Atta, Rice & Dal, Dairy, Bread & Eggs, Chips & Namkeen, Sweets & Chocolates, Ice Creams & More, Electronics, and 20 more — top 3 subcategories each) plus 8 keyword groups — up from 3 collections. Subcategory lists can be refreshed live from `POST /v1/layout/listing` with a `collection_uuid`.
 - **Blank-results fix:** a scan that fetches nothing now says why instead of showing an empty grid — no delivery location, Blinkit 403 block, rate limit, or server error. The empty state shows how many products the last scan fetched and the exact fetch problem.
-- **Second fetch shape:** a collection that returns nothing is retried once as a keyword search (`/v1/layout/search`) for the subcategory name, instead of reporting an empty aisle.
+- **Second fetch shape:** when a collection's first page returns nothing, the scanner switches to keyword search (`/v1/layout/search`) for that subcategory and keeps paging through that search.
 - **Full listing request body:** `listing_widgets` now sends the complete body the site itself sends (collection filters/properties, snippet types, totals) instead of the short form, and search requests use the site's exact field types (`page_index`/`offset`/`limit` as numbers, `oos_visibility` as `"true"`).
-- **Discount-cutoff paging:** pages come back sorted by discount, so paging stops once a page is short or its tail falls below 50% off (or is all sold out) — no more fetching empty pages. Default depth is now 2 pages per category (up to 5 in the picker).
+- **Discount-cutoff paging:** pages come back sorted by discount, so paging stops once a page is short or its tail falls below the configured minimum discount (or is all sold out). Default depth is 2 pages per category (up to 5 in the picker).
 - **In-browser self-test:** a Self-test button in the sidebar runs the parser, the discount cutoff, the fallback decision and the error messages over built-in fixtures and reports pass/fail. Same checks run in `node test-results-tab.js`.
 - **JSON export** alongside CSV; CSV building is now a shared helper covered by the test.
 - **Bot:** `bot/platform.js` uses the full listing body and cutoff, retries empty collections as keyword searches, and scans **multiple pincodes** — set `BLINKIT_LOCATIONS="lat,lon;lat,lon"` to merge results across delivery areas, deduped by product id; a failing location is skipped instead of failing the run. `bot/config.json` adds Atta/Rice/Dal, Chips & Namkeen and Baby Care collections.
@@ -19,7 +19,7 @@ Scans the Blinkit keyword groups and collections you pick and shows the biggest 
 
 ## Why v2 is stronger
 
-The browser tool already had what a plain deal list doesn't, and v2 keeps all of it: price history with a sparkline on every product you've seen, lowest-ever and price-drop labels, saved-item tracking with per-item drop alerts, a cross-category best-deals row, unit price (per kg / litre / piece) with a value sort, one-tap presets, a shopping list with totals, CSV/JSON export, and light/dark themes. On top of that, v2 adds the reliability layer a deal finder needs most: two fetch shapes with a fallback, retries with backoff on 429/5xx, cutoff paging that stops at the 50% discount tail, and diagnostics that name the cause of zero results. The Telegram bot dedupes by product and keeps a 30-day price history (`data/state.json`), so it sends new deals, price drops and restocks — not the same list every run — and now covers several pincodes in one run.
+The browser tool already had what a plain deal list doesn't, and v2 keeps all of it: price history with a sparkline on every product you've seen, lowest-ever and price-drop labels, saved-item tracking with per-item drop alerts, a cross-category best-deals row, unit price (per kg / litre / piece) with a value sort, one-tap presets, a shopping list with totals, CSV/JSON export, and light/dark themes. On top of that, v2 adds two fetch shapes with a fallback, retries with backoff on 429/5xx, paging that respects the minimum discount, and diagnostics that name the cause of zero results. The Telegram bot dedupes by product and keeps a 30-day price history (`data/state.json`), so it sends new deals, price drops and restocks — not the same list every run — and now covers several pincodes in one run.
 
 ## Features
 
@@ -106,8 +106,8 @@ Uses Blinkit's own web endpoints (`/v1/layout/search` and `/v1/layout/listing_wi
 
 ```bash
 node --check src/deals.js bot/platform.js bot/core.js   # syntax
-node test-results-tab.js                                # 42 checks: 70-item fixture -> 70 cards, cutoff, fallback, retries, diagnostics, CSV, unit price
-node test/bot-platform.test.js                          # 10 checks: bot fetch layer (multi-pincode, fallback, cutoff) with stubbed fetch
+node test-results-tab.js                                # 70-item fixture -> 70 cards, cutoff, fallback, retries, diagnostics, CSV, unit price
+node test/bot-platform.test.js                          # bot fetch and feed tests with stubbed fetch
 node build.js                                           # rebuilds dist/ and index.html
 ```
 

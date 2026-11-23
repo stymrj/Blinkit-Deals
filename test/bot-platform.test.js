@@ -6,7 +6,7 @@ const path = require('path');
 const platform = require(path.join(__dirname, '..', 'bot', 'platform.js'));
 // The production price() from bot/core.js (the ctx the bot actually runs
 // with) — the test must exercise the real function, not a copy of it.
-const { price } = require(path.join(__dirname, '..', 'bot', 'core.js'));
+const { price, run } = require(path.join(__dirname, '..', 'bot', 'core.js'));
 let pass = 0, fail = 0;
 function check(name, ok, extra) {
   if (ok) { pass++; console.log('  ok - ' + name); }
@@ -67,12 +67,36 @@ const kwJob = { g: { name: 'Grocery & Staples' }, sub: ['atta', 'Atta'] };
     : resp({ json: { response: { widgets: [] } } }));
   r = await platform.fetchPage(listJob, 1, c);
   check('empty collection falls back to search: 2 items', r.length === 2, 'len ' + r.length);
+  const fallbackCalls = [], searchLocations = new Set();
+  c = ctx({ BLINKIT_LOCATIONS: '28.61,77.20;28.55,77.25' });
+  c.fetch = async (url, opts) => {
+    const lat = opts.headers.lat, search = url.includes('/search'), offset = Number(JSON.parse(opts.body).offset);
+    fallbackCalls.push({ lat, search, offset });
+    const widgets = lat === '28.61' && !search ? [] : Array.from({ length: 15 }, (_, i) => mkItem(offset + i + 1, 40));
+    return resp({ json: { response: { widgets } } });
+  };
+  const lowerMin = { ...listJob, min: 35 };
+  r = await platform.fetchPage(lowerMin, 1, c, searchLocations);
+  check('bot uses configured 35% cutoff for 40%-off tail', r.length === 15 && r.more === true);
+  await platform.fetchPage(lowerMin, 2, c, searchLocations);
+  check('bot continues each location on its own endpoint and offset', fallbackCalls.length === 5 &&
+    fallbackCalls.some(p => p.lat === '28.61' && p.search && p.offset === 15) &&
+    fallbackCalls.some(p => p.lat === '28.55' && !p.search && p.offset === 15));
   // 6. 403 -> blocked error.
   c = ctx({ BLINKIT_LAT: '28.61', BLINKIT_LON: '77.20' });
   c.fetch = async () => resp({ status: 403 });
   threw = null;
   try { await platform.fetchPage(listJob, 1, c); } catch (e) { threw = e; }
   check('403 throws a blocked error', !!threw && threw.blocked === true, threw && threw.message);
+  let retries = 0;
+  c.fetch = async () => { retries++; return resp({ status: 503 }); };
+  threw = null;
+  try { await platform.fetchPage(listJob, 1, c); } catch (e) { threw = e; }
+  check('exhausted 503 retries preserve upstream status', retries === 5 && !!threw && /HTTP 503/.test(threw.message));
+  c.fetch = async () => resp({ status: 401 });
+  threw = null;
+  try { await platform.fetchPage(listJob, 1, c); } catch (e) { threw = e; }
+  check('HTTP 401 is a scan failure, not an empty aisle', !!threw && /HTTP 401/.test(threw.message));
   // 7. keyword job uses the search endpoint with discount sort.
   let seenUrl = '';
   c = ctx({ BLINKIT_LAT: '28.61', BLINKIT_LON: '77.20' });
@@ -97,6 +121,34 @@ const kwJob = { g: { name: 'Grocery & Staples' }, sub: ['atta', 'Atta'] };
   c.fetch = async () => resp({ json: tailPage });
   r = await platform.fetchPage(listJob, 1, c);
   check('bot cutoff page: 15 items, tail true discounts, more=true', r.length === 15 && r.more === true && r.slice(-3).map(p => p.disc).join(',') === '95,90,92', 'len ' + r.length + ' more ' + r.more);
+
+  const feedPlatform = { ...platform, required: [] };
+  const env = process.env, log = console.log, output = [], pageTwoMins = [];
+  process.env = { GROUPS: 'grocery', PAGES: '2', MIN_DISCOUNT: '35', THRESHOLDS: 'grocery=90' };
+  console.log = s => output.push(s);
+  let feedExit, failedExit, emptyExit, feed;
+  try {
+    feedPlatform.fetchPage = async (job, page) => {
+      if (page === 1) return Object.assign([{ id: '1', disc: 20 }], { more: true });
+      pageTwoMins.push(job.min);
+      return [{ id: '2', title: 'Atta', price: 120, mrp: 200, disc: 40, inStock: true }];
+    };
+    feedExit = await run(feedPlatform, ['--json']);
+    feed = JSON.parse(output.pop());
+    feedPlatform.fetchPage = async () => { throw new Error('Blinkit returned HTTP 503'); };
+    output.length = 0;
+    failedExit = await run(feedPlatform, ['--json']);
+    if (output.some(line => line.startsWith('{'))) failedExit = 0;
+    feedPlatform.fetchPage = async () => [];
+    emptyExit = await run(feedPlatform, ['--json']);
+  } finally {
+    console.log = log;
+    process.env = env;
+  }
+  check('JSON feed honors explicit continuation and uses its own minimum',
+    feedExit === 0 && pageTwoMins.length > 0 && pageTwoMins.every(min => min === 35) && feed.deals.length === 1 && feed.deals[0].disc === 40);
+  check('JSON feed fails without publishing when all aisles fail and still permits a valid empty scan',
+    failedExit === 1 && emptyExit === 0 && JSON.parse(output.at(-1)).deals.length === 0);
 
   console.log('\n' + (fail ? 'FAIL: ' + fail + ' check(s) failed, ' + pass + ' passed' : 'PASS: all ' + pass + ' checks passed'));
   process.exit(fail ? 1 : 0);

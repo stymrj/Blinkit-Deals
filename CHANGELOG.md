@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.1 — 2026-11-23
+- Browser, Telegram and feed scans now use their configured discount minimum when deciding whether to fetch another page.
+- When an empty collection falls back to keyword search, later pages continue that search instead of restarting. The bot tracks the fallback separately for each delivery area.
+- Failed scans report Blinkit's HTTP status after retries. The bot no longer publishes an empty feed if every aisle failed.
+- The userscript now runs on both `blinkit.com` and `www.blinkit.com`, and mobile setup consistently calls the bookmark **Blinkit Deals**.
+
 ## v2.0.0 — 2026-11-08
 - Fixed (2026-11-09): install button now reads “Blinkit Deals” instead of the generic “PriceDrop Hunter”, so the dragged bookmark is named after this store instead of colliding with every other tool.
 - Fixed (2026-11-09): highest-discount items are fetched again — the parser now reads prices keyed `value` / `max` / `text` instead of only `{text}`, and MRP as a plain number or string. Those shapes used to drop the item entirely (no selling price parsed), or parse to 0% off when only the MRP was oddly shaped — and a page whose tail parsed to 0% tripped the 50% discount cutoff, so paging stopped and later pages were never fetched. Same fix in the Telegram bot path (`bot/core.js` price, `bot/platform.js` normalise); covered by `fixtures/sample-high-discount.json`, section 7 of `test-results-tab.js`, and `test/bot-platform.test.js`.

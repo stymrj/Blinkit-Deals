@@ -33,12 +33,10 @@ function extract(json, cat, ctx) {
   return out;
 }
 
-// Pages come back sorted by discount: stop when a page is short or its tail has
-// fallen below the 50% cutoff instead of fetching empty pages.
-function cutoffReached(items) {
+function cutoffReached(items, min) {
   if (!items.length) return true;
   if (items.every(p => p.inStock === false)) return true;
-  return items.slice(-3).every(p => p.disc < 50);
+  return items.slice(-3).every(p => p.disc < min);
 }
 
 // Delivery points to scan: BLINKIT_LOCATIONS="lat,lon;lat,lon" scans each pincode
@@ -52,41 +50,52 @@ function locationsOf(env) {
   return [{ lat: env.BLINKIT_LAT, lon: env.BLINKIT_LON }];
 }
 
-async function fetchOne(job, page, lat, lon, ctx) {
-  const { env, fetch, sleep } = ctx;
+function pageRequest(job, page, keyword) {
   const [code] = job.sub, offset = (page - 1) * 15, pi = String(page - 1);
   let url, body;
-  if (job.g.uuid) {
+  if (!keyword) {
     url = 'https://blinkit.com/v1/layout/listing_widgets?collection_uuid=' + encodeURIComponent(job.g.uuid) + '&collection_group_id=' + code + '&sort=discount_desc';
     body = { offset: String(offset), limit: '15', collection_filters: '[]', collection_group_id: code, collection_properties: JSON.stringify([{ id: 4179, name: 'NEXT_PRODUCT_RECOMMENDATION', value: 'true' }]), collection_uuid: job.g.uuid, exclude_combos: 'false', last_snippet_type: 'product_card_snippet_type_2', last_widget_type: 'product_container', oos_visibility: 'true', page_index: pi, products: '[]', total_entities_processed: String(offset), total_pagination_items: String(15 * 200), applied_filters: null, sort: 'discount_desc' };
   } else {
-    url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(code) + '&search_type=type_to_search&page_index=' + pi + '&offset=' + offset + '&limit=15&oos_visibility=true&sort=discount_desc';
-    body = { query: code, q: code, search_query: code, page_index: page - 1, offset, limit: 15, oos_visibility: 'true', sort: 'discount_desc' };
+    url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(keyword) + '&search_type=type_to_search&page_index=' + pi + '&offset=' + offset + '&limit=15&oos_visibility=true&sort=discount_desc';
+    body = { query: keyword, q: keyword, search_query: keyword, page_index: page - 1, offset, limit: 15, oos_visibility: 'true', sort: 'discount_desc' };
   }
+  return { url, body };
+}
+
+async function fetchOne(job, page, lat, lon, ctx, searchLocations) {
+  const { env, fetch, sleep } = ctx;
+  const location = lat + ',' + lon;
+  let keyword = job.g.uuid ? (searchLocations.has(location) ? job.sub[1] : '') : job.sub[0];
+  let { url, body } = pageRequest(job, page, keyword);
   await sleep(350 + Math.random() * 450); // Blinkit rate-limits bursts hard
-  let fellBack = false;
+  let lastStatus;
   for (let a = 0; a < 5; a++) {
     const r = await fetch(url, {
       method: 'POST', body: JSON.stringify(body),
       headers: { 'content-type': 'application/json', accept: '*/*', app_client: 'consumer_web', lat, lon, 'user-agent': UA, origin: 'https://blinkit.com', referer: 'https://blinkit.com/', ...(env.BLINKIT_COOKIE ? { cookie: env.BLINKIT_COOKIE } : {}) }
     });
     if (r.status === 403) throw Object.assign(new Error('Blinkit blocked this machine (HTTP 403). GitHub-hosted runners are often blocked; use a self-hosted runner (see README).'), { blocked: true });
-    if (r.status === 429) { await sleep(2500 * (a + 1) + Math.random() * 1000); continue; }
-    if (r.status >= 500) { await sleep(2000 * (a + 1)); continue; }
-    if (!r.ok) return [];
+    if (r.status === 429 || r.status >= 500) {
+      lastStatus = r.status;
+      if (a < 4) await sleep(r.status === 429 ? 2500 * (a + 1) + Math.random() * 1000 : 2000 * (a + 1));
+      continue;
+    }
+    if (!r.ok) throw new Error('Blinkit returned HTTP ' + r.status + ' instead of deal data.');
     const items = extract(await r.json(), job.g.name + ' › ' + job.sub[1], ctx);
     // A collection that returns nothing is retried once as a keyword search for
     // the subcategory name, instead of reporting an empty aisle.
-    if (!items.length && !fellBack && job.g.uuid) {
-      fellBack = true;
-      url = 'https://blinkit.com/v1/layout/search?q=' + encodeURIComponent(job.sub[1]) + '&search_type=type_to_search&page_index=0&offset=0&limit=15&oos_visibility=true&sort=discount_desc';
-      body = { query: job.sub[1], q: job.sub[1], search_query: job.sub[1], page_index: 0, offset: 0, limit: 15, oos_visibility: 'true', sort: 'discount_desc' };
+    if (!items.length && !keyword && page === 1 && job.sub[1]) {
+      keyword = job.sub[1];
+      searchLocations.add(location);
+      ({ url, body } = pageRequest(job, page, keyword));
+      a = -1;
       continue;
     }
-    items.more = items.length >= 15 && !cutoffReached(items);
+    items.more = items.length >= 15 && !cutoffReached(items, job.min ?? 50);
     return items;
   }
-  throw new Error('rate limited');
+  throw new Error('Blinkit returned HTTP ' + lastStatus + ' after 5 attempts.');
 }
 
 module.exports = {
@@ -95,7 +104,7 @@ module.exports = {
   workers: 2,
   sortedByDiscount: true,
   pageSize: 15,
-  async fetchPage(job, page, ctx) {
+  async fetchPage(job, page, ctx, searchLocations = new Set()) {
     // Multi-pincode: scan every configured location and merge, deduped by id.
     // A location that fails (rate limit, block) is skipped; the job only fails
     // when every location fails.
@@ -103,7 +112,7 @@ module.exports = {
     let anyMore = false, okCount = 0, lastErr = null;
     for (const { lat, lon } of locationsOf(ctx.env)) {
       let items;
-      try { items = await fetchOne(job, page, lat, lon, ctx); }
+      try { items = await fetchOne(job, page, lat, lon, ctx, searchLocations); }
       catch (e) { if (e.blocked) throw e; lastErr = e; continue; }
       okCount++;
       for (const p of items) if (!seen.has(p.id)) { seen.add(p.id); merged.push(p); }
