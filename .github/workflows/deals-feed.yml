@@ -16,7 +16,8 @@
 #   https://raw.githubusercontent.com/stymrj/<Repo>/feed/deals.json
 # at ~08:45 IST and sends the digest at 09:00 IST.
 #
-# Per-repo differences (edit ONLY the "Scan" step's command + setup step):
+# Per-repo differences (edit ONLY the "Scan" step's command + setup step,
+# and the secret names checked in the `secrets` job to that repo's own):
 #   Node core.js repos (Amazon, Blinkit, Flipkart, BigBasket, Myntra, Croma):
 #     setup-node 20; run: node bot/run.js --json | tail -n 1 > deals.json
 #     env: the repo's usual platform secrets (e.g. AMAZON_COOKIE,
