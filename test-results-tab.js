@@ -25,8 +25,9 @@ if (end < 0) throw new Error('slice anchor missing in src/deals.js');
 const head = src.slice(src.indexOf('(function () {'), end);
 const lib = eval(head + `
 var store = { brandId: '', lat: '28.61', lon: '77.20', groups: [] };
-return { extract, normalise, price, txt, guessBrand, classifyFetchError, pageResult, cutoffReached, searchFallbackFor, selfTest, toCSV, fetchPage };
+return { extract, normalise, price, txt, guessBrand, classifyFetchError, pageResult, cutoffReached, searchFallbackFor, selfTest, toCSV, fetchPage, aislesOf, categoryOf, aisleMatches };
 })();`);
+const { aislesOf, categoryOf, aisleMatches } = lib;
 
 // ---- grab unitOf (+ its UNITS table) from the Filtering section ----
 function grabFn(name) {
@@ -149,6 +150,13 @@ function mkItem(id, disc, oos) {
   check('a duplicate product remains deduped and is discoverable in its second aisle',
     newCount === 1 && S.products.size === 1 && filterResults(S, store)[0]?.id === shared.id &&
     filterBar([]).includes('value="Pantry › Flour" selected'));
+  const csvFor = cat => lib.toCSV(filterResults({ ...S, cat }, store), cat).split('\n');
+  check('CSV for a second aisle lists only the selected aisle',
+    csvFor('Pantry › Flour').length === 2 && csvFor('Pantry › Flour')[1].startsWith('"Atta","Fortune","Pantry › Flour",'));
+  check('CSV for a parent category lists the matching aisle, not the first scanned aisle',
+    csvFor('Pantry')[1].startsWith('"Atta","Fortune","Pantry › Flour",'));
+  check('CSV without a category filter lists all aisles on a single product row',
+    csvFor('').length === 2 && csvFor('')[1].startsWith('"Atta","Fortune","Grocery › Atta; Pantry › Flour",'));
   const card = () => '';
   const bestView = eval(`(function () {
     ${resultsFilters}

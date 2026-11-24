@@ -220,9 +220,15 @@
     checks.push({ name: 'paging: a full page reports more=true, a short page more=false', pass: pageResult([1, 2], true).more === true && pageResult([1], false).more === false });
     return { ok: checks.every(c => c.pass), checks };
   }
+  const aislesOf = p => p.aisles || [p.cat];
+  const categoryOf = aisle => aisle.split(' › ')[0];
+  const aisleMatches = (aisle, selection) => aisle === selection || categoryOf(aisle) === selection;
   // ── Export helpers ───────────────────────────────────────────────────────────
-  function toCSV(list) {
-    const rows = [['Title', 'Brand', 'Category', 'Price', 'MRP', 'Discount %', 'Saving', 'In stock', 'URL']].concat(list.map(p => [p.title, p.brand, p.cat, p.price, p.mrp, p.disc, p.save, p.inStock, p.url]));
+  function toCSV(list, selection) {
+    const rows = [['Title', 'Brand', 'Category', 'Price', 'MRP', 'Discount %', 'Saving', 'In stock', 'URL']].concat(list.map(p => {
+      const aisles = aislesOf(p).filter(a => !selection || aisleMatches(a, selection));
+      return [p.title, p.brand, aisles.join('; '), p.price, p.mrp, p.disc, p.save, p.inStock, p.url];
+    }));
     return rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
   }
   // Live data can only be read from the store's own site, inside your logged-in tab.
@@ -316,9 +322,6 @@
     lowest: ['Lowest tracked price', p => p.lowEver],
     savings: ['Save ₹100+', p => p.save >= 100]
   };
-  const aislesOf = p => p.aisles || [p.cat];
-  const categoryOf = aisle => aisle.split(' › ')[0];
-  const aisleMatches = (aisle, selection) => aisle === selection || categoryOf(aisle) === selection;
   // Price history: a few points per product, kept only in this browser.
   store.hist = store.hist || {};
   store.favAt = store.favAt || {};
@@ -964,7 +967,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
       case 'openlinks': Object.keys(store.list).map(i => S.products.get(i)).filter(p => p && p.url).forEach(p => window.open(p.url, '_blank', 'noopener')); break;
       case 'copyall': copy(filtered().slice(0, 20).map(p => `${p.disc}% off · ${p.title} · ${$inr(p.price)} (MRP ${$inr(p.mrp)})${p.url ? '\n' + p.url : ''}`).join('\n'), 'Top 20 deals copied'); break;
       case 'csv': {
-        const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([toCSV(filtered())], { type: 'text/csv' })); a2.download = 'blinkit-deals.csv'; a2.click(); toast('CSV downloaded'); break;
+        const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([toCSV(filtered(), S.cat)], { type: 'text/csv' })); a2.download = 'blinkit-deals.csv'; a2.click(); toast('CSV downloaded'); break;
       }
       case 'json': {
         const a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([JSON.stringify(filtered(), null, 2)], { type: 'application/json' })); a2.download = 'blinkit-deals.json'; a2.click(); toast('JSON downloaded'); break;
