@@ -109,6 +109,32 @@ function mkItem(id, disc, oos) {
   check('unit price: 500 g = 0.5 kg', unitOf('Sugar 500 g').qty === 0.5);
   check('unit price: 1 L', unitOf('Milk 1 L').base === 'L');
 
+  console.log('== Results toolbar: shopping filters and ordering ==');
+  const resultsFilters = src.slice(src.indexOf('  const UNIT_BASES ='), src.indexOf('  // ───────────────────────── UI'));
+  const filterResults = eval(`(function (S, store) {
+    ${resultsFilters}
+    return filtered();
+  })`);
+  const stock = [
+    { id: 'atta', title: 'Atta', brand: 'Fortune', cat: 'Grocery › Atta', price: 99, disc: 50, inStock: true, unit: unitOf('1 kg') },
+    { id: 'dal', title: 'Dal', brand: 'Tata Sampann', cat: 'Grocery › Dal', price: 100, disc: 40, inStock: true, unit: unitOf('2 kg'), lowEver: true },
+    { id: 'milk', title: 'Milk', brand: 'Amul', cat: 'Dairy › Milk', price: 48, disc: 30, inStock: true, unit: unitOf('1 L') },
+    { id: 'oos', title: 'Premium Dal', brand: 'Tata Sampann', cat: 'Grocery › Dal', price: 40, disc: 50, inStock: false, unit: unitOf('500 g'), lowEver: true },
+    { id: 'no-unit', title: 'Assorted snacks', brand: 'Test', cat: 'Snacks', price: 120, disc: 20, inStock: true }
+  ];
+  const results = (state = {}, settings = {}) => filterResults({
+    q: '', tab: 'all', products: new Map(stock.map(p => [p.id, p])), ...state
+  }, { sort: 'disc', favs: ['dal'], hidden: [], minDisc: 0, stockOnly: true, ...settings }).map(p => p.id).join(',');
+  check('budget bands split at ₹100 without overlap', results({ priceBand: 'under100' }) === 'atta,milk' && results({ priceBand: 'mid' }) === 'dal,no-unit');
+  check('aisle is narrower than its parent category and works on Best deals', results({ cat: 'Grocery' }) === 'atta,dal' && results({ cat: 'Grocery › Dal', tab: 'best' }) === 'dal');
+  check('lowest tracked price and saved filters combine with stock', results({ dealSignal: 'lowest', tab: 'saved' }) === 'dal' &&
+    results({ dealSignal: 'lowest' }, { stockOnly: false }) === 'oos,dal');
+  check('unit comparison is by like unit and normalized pack size', results({ unitBase: 'kg' }, { sort: 'unit' }) === 'dal,atta' &&
+    results({}, { sort: 'unit' }) === 'dal,atta,milk,no-unit');
+  check('brand search and discount combine with a custom budget cap',
+    results({ q: 'tata sampann' }, { minDisc: 40, maxPrice: 100 }) === 'dal' &&
+    results({ q: 'tata sampann' }, { minDisc: 45, maxPrice: 100 }) === '');
+
   console.log('== 6. fetchPage with stubbed fetch: cutoff paging, fallback, retry ==');
   const listJob = { kind: 'list', uuid: 'OTg3NjU0MzIxMjM0NTMzNjk=', gid: '16426', g: { name: 'Atta, Rice & Dal (collection)' }, name: 'Atta' };
   const searchJob = { kind: 'search', q: 'atta', g: { name: 'Grocery & Staples' }, name: 'Atta' };

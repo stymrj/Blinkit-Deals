@@ -30,9 +30,8 @@ The browser tool already had what a plain deal list doesn't, and v2 keeps all of
 - Price history sparkline on every product you have seen before
 - Saved items strip showing how much each one dropped since you saved it
 - Unit price (per kg, litre or piece) with a value sort
-- One-tap presets: under ₹99, 50% off, save ₹100+, price drops, lowest ever, best value
 - A setup checklist on first open, plus a scan-status line when a scan fetched nothing
-- Filters: search, category, brand, maximum price, minimum discount, stock, saved items
+- Results filters: category and aisle, rupee budget bands or a custom price cap, minimum discount, unit type, brand, stock, saved items, and deal signals like lowest tracked price or ₹100+ savings
 - Shopping list with quantities, total and total savings
 - CSV and JSON export, copy-to-share text
 - Grid and list views, light and dark themes, keyboard shortcuts
@@ -52,7 +51,7 @@ The browser tool already had what a plain deal list doesn't, and v2 keeps all of
 
 ## Use
 
-Pick categories in the picker, press Scan, and watch deals arrive — 2 categories fetch in parallel with a progress bar. Items are deduped across pages, categories and (in the bot) pincodes. Press **Self-test** in the sidebar any time to check the parser without scanning.
+Pick categories in the picker, press Scan, and watch deals arrive — 2 categories fetch in parallel with a progress bar. Items are deduped across pages, categories and (in the bot) pincodes. Try **Under ₹100** for a quick budget shop, or choose **Weight · ₹/kg** and sort by unit price to compare different pack sizes. Open the **Scan settings and exports** menu for delivery coordinates, CSV/JSON export, and **Self-test**.
 
 Keyboard shortcuts: `/` search, `S` scan or stop, `Esc` close.
 

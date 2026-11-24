@@ -28,7 +28,7 @@ fs.writeFileSync(path.join(__dirname, 'dist/deals.js'), code);
 const header = `// ==UserScript==
 // @name         PriceDrop Hunter for Blinkit
 // @namespace    blinkit-deals
-// @version      2.0.1
+// @version      2.1.0
 // @description  Sweep Blinkit across dozens of keywords and collections, rank deals by real savings, and track price drops between scans.
 // @match        https://blinkit.com/*
 // @match        https://www.blinkit.com/*
