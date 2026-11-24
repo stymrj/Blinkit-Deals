@@ -149,6 +149,20 @@ function mkItem(id, disc, oos) {
   check('a duplicate product remains deduped and is discoverable in its second aisle',
     newCount === 1 && S.products.size === 1 && filterResults(S, store)[0]?.id === shared.id &&
     filterBar([]).includes('value="Pantry › Flour" selected'));
+  const card = () => '';
+  const bestView = eval(`(function () {
+    ${resultsFilters}
+    ${grabFn('bestView')}
+    return bestView;
+  })()`);
+  ingest([{ ...stock[1], cat: 'Pantry › Dal' }]);
+  const aisleView = bestView(filterResults(S, store));
+  const seeAllTarget = aisleView.match(/data-act="seeall" data-id="([^"]+)">See all 1/)?.[1];
+  check('Best deals See all keeps the selected aisle and excludes sibling aisles',
+    seeAllTarget === 'Pantry › Flour' && filterResults({ ...S, tab: 'all', cat: seeAllTarget }, store).length === 1);
+  S.cat = '';
+  check('Best deals See all without an aisle filter still opens the whole category',
+    bestView(filterResults(S, store)).includes('data-act="seeall" data-id="Pantry">See all 2'));
 
   console.log('== 6. fetchPage with stubbed fetch: cutoff paging, fallback, retry ==');
   const listJob = { kind: 'list', uuid: 'OTg3NjU0MzIxMjM0NTMzNjk=', gid: '16426', g: { name: 'Atta, Rice & Dal (collection)' }, name: 'Atta' };

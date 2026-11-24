@@ -721,7 +721,7 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     const rows = [...cats.entries()].map(([c, ps]) => [c, ps.sort(byDisc)]).sort((x, y) => y[1][0].disc - x[1][0].disc);
     return `<section class="sec"><div class="sh"><h3>Biggest discounts right now</h3><span>${list.length} deals from ${cats.size} categories</span></div>
   <div class="grid ${store.view}">${top.map(p => card(p, fav.has(p.id), store.list)).join('')}</div></section>
- ${rows.map(([c, ps]) => `<section class="sec"><div class="sh"><h3>${esc(c)}</h3><button class="more" data-act="seeall" data-id="${esc(c)}">See all ${ps.length}${ic('ext', 13)}</button></div>
+ ${rows.map(([c, ps]) => `<section class="sec"><div class="sh"><h3>${esc(c)}</h3><button class="more" data-act="seeall" data-id="${esc(S.cat || c)}">See all ${ps.length}${ic('ext', 13)}</button></div>
   <div class="hs">${ps.slice(0, 10).map(p => card(p, fav.has(p.id), store.list, S.cat || c)).join('')}</div></section>`).join('')}`;
   }
   function filterBar(list) {
