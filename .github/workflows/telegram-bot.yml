@@ -28,6 +28,7 @@ jobs:
     steps:
       - name: Check required secrets
         id: check
+        shell: bash
         env:
           BLINKIT_LAT: ${{ secrets.BLINKIT_LAT }}
           BLINKIT_LON: ${{ secrets.BLINKIT_LON }}
