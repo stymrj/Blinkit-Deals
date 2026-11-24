@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.1.0
+- Redesigned the results panel around a compact toolbar with a live match count, more compact product cards, and a separate menu for scan settings and exports.
+- Added category and aisle filters, rupee budget bands, brand, unit comparisons, and deal signals such as lowest tracked price. Unit-price sorting compares like units only.
+
 ## v2.0.1 — 2026-11-23
 - Browser, Telegram and feed scans now use their configured discount minimum when deciding whether to fetch another page.
 - When an empty collection falls back to keyword search, later pages continue that search instead of restarting. The bot tracks the fallback separately for each delivery area.

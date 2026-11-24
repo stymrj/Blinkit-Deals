@@ -25,8 +25,9 @@ if (end < 0) throw new Error('slice anchor missing in src/deals.js');
 const head = src.slice(src.indexOf('(function () {'), end);
 const lib = eval(head + `
 var store = { brandId: '', lat: '28.61', lon: '77.20', groups: [] };
-return { extract, normalise, price, txt, guessBrand, classifyFetchError, pageResult, cutoffReached, searchFallbackFor, selfTest, toCSV, fetchPage };
+return { extract, normalise, price, txt, guessBrand, classifyFetchError, pageResult, cutoffReached, searchFallbackFor, selfTest, toCSV, fetchPage, aislesOf, categoryOf, aisleMatches };
 })();`);
+const { aislesOf, categoryOf, aisleMatches } = lib;
 
 // ---- grab unitOf (+ its UNITS table) from the Filtering section ----
 function grabFn(name) {
@@ -108,6 +109,68 @@ function mkItem(id, disc, oos) {
   check('unit price: 10 kg', JSON.stringify(unitOf('Test Atta 10 kg')) === JSON.stringify({ base: 'kg', qty: 10 }));
   check('unit price: 500 g = 0.5 kg', unitOf('Sugar 500 g').qty === 0.5);
   check('unit price: 1 L', unitOf('Milk 1 L').base === 'L');
+
+  console.log('== Results toolbar: shopping filters and ordering ==');
+  const resultsFilters = src.slice(src.indexOf('  const UNIT_BASES ='), src.indexOf('  // ───────────────────────── UI'));
+  const filterResults = eval(`(function (S, store) {
+    ${resultsFilters}
+    return filtered();
+  })`);
+  const stock = [
+    { id: 'atta', title: 'Atta', brand: 'Fortune', cat: 'Grocery › Atta', price: 99, disc: 50, inStock: true, unit: unitOf('1 kg') },
+    { id: 'dal', title: 'Dal', brand: 'Tata Sampann', cat: 'Grocery › Dal', price: 100, disc: 40, inStock: true, unit: unitOf('2 kg'), lowEver: true },
+    { id: 'milk', title: 'Milk', brand: 'Amul', cat: 'Dairy › Milk', price: 48, disc: 30, inStock: true, unit: unitOf('1 L') },
+    { id: 'oos', title: 'Premium Dal', brand: 'Tata Sampann', cat: 'Grocery › Dal', price: 40, disc: 50, inStock: false, unit: unitOf('500 g'), lowEver: true },
+    { id: 'no-unit', title: 'Assorted snacks', brand: 'Test', cat: 'Snacks', price: 120, disc: 20, inStock: true }
+  ];
+  const results = (state = {}, settings = {}) => filterResults({
+    q: '', tab: 'all', products: new Map(stock.map(p => [p.id, p])), ...state
+  }, { sort: 'disc', favs: ['dal'], hidden: [], minDisc: 0, stockOnly: true, ...settings }).map(p => p.id).join(',');
+  check('budget bands split at ₹100 without overlap', results({ priceBand: 'under100' }) === 'atta,milk' && results({ priceBand: 'mid' }) === 'dal,no-unit');
+  check('aisle is narrower than its parent category and works on Best deals', results({ cat: 'Grocery' }) === 'atta,dal' && results({ cat: 'Grocery › Dal', tab: 'best' }) === 'dal');
+  check('lowest tracked price and saved filters combine with stock', results({ dealSignal: 'lowest', tab: 'saved' }) === 'dal' &&
+    results({ dealSignal: 'lowest' }, { stockOnly: false }) === 'oos,dal');
+  check('unit comparison is by like unit and normalized pack size', results({ unitBase: 'kg' }, { sort: 'unit' }) === 'dal,atta' &&
+    results({}, { sort: 'unit' }) === 'dal,atta,milk,no-unit');
+  check('brand search and discount combine with a custom budget cap',
+    results({ q: 'tata sampann' }, { minDisc: 40, maxPrice: 100 }) === 'dal' &&
+    results({ q: 'tata sampann' }, { minDisc: 45, maxPrice: 100 }) === '');
+  const S = { q: '', tab: 'best', products: new Map() };
+  const store = { prices: {}, hist: {}, minDisc: 30, favs: [], hidden: [], sort: 'disc' };
+  const allowed = () => true, ic = () => '', esc = s => String(s);
+  const ingest = eval('(' + grabFn('ingest') + ')');
+  const filterBar = eval(`(function () {
+    ${resultsFilters}
+    ${grabFn('filterBar')}
+    return filterBar;
+  })()`);
+  const shared = { ...stock[0], cat: 'Grocery › Atta' };
+  const newCount = ingest([shared]) + ingest([{ ...shared, cat: 'Pantry › Flour' }]) + ingest([{ ...shared, cat: 'Pantry › Flour' }]);
+  S.cat = 'Pantry › Flour';
+  check('a duplicate product remains deduped and is discoverable in its second aisle',
+    newCount === 1 && S.products.size === 1 && filterResults(S, store)[0]?.id === shared.id &&
+    filterBar([]).includes('value="Pantry › Flour" selected'));
+  const csvFor = cat => lib.toCSV(filterResults({ ...S, cat }, store), cat).split('\n');
+  check('CSV for a second aisle lists only the selected aisle',
+    csvFor('Pantry › Flour').length === 2 && csvFor('Pantry › Flour')[1].startsWith('"Atta","Fortune","Pantry › Flour",'));
+  check('CSV for a parent category lists the matching aisle, not the first scanned aisle',
+    csvFor('Pantry')[1].startsWith('"Atta","Fortune","Pantry › Flour",'));
+  check('CSV without a category filter lists all aisles on a single product row',
+    csvFor('').length === 2 && csvFor('')[1].startsWith('"Atta","Fortune","Grocery › Atta; Pantry › Flour",'));
+  const card = () => '';
+  const bestView = eval(`(function () {
+    ${resultsFilters}
+    ${grabFn('bestView')}
+    return bestView;
+  })()`);
+  ingest([{ ...stock[1], cat: 'Pantry › Dal' }]);
+  const aisleView = bestView(filterResults(S, store));
+  const seeAllTarget = aisleView.match(/data-act="seeall" data-id="([^"]+)">See all 1/)?.[1];
+  check('Best deals See all keeps the selected aisle and excludes sibling aisles',
+    seeAllTarget === 'Pantry › Flour' && filterResults({ ...S, tab: 'all', cat: seeAllTarget }, store).length === 1);
+  S.cat = '';
+  check('Best deals See all without an aisle filter still opens the whole category',
+    bestView(filterResults(S, store)).includes('data-act="seeall" data-id="Pantry">See all 2'));
 
   console.log('== 6. fetchPage with stubbed fetch: cutoff paging, fallback, retry ==');
   const listJob = { kind: 'list', uuid: 'OTg3NjU0MzIxMjM0NTMzNjk=', gid: '16426', g: { name: 'Atta, Rice & Dal (collection)' }, name: 'Atta' };
