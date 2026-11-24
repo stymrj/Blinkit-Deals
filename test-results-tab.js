@@ -134,6 +134,21 @@ function mkItem(id, disc, oos) {
   check('brand search and discount combine with a custom budget cap',
     results({ q: 'tata sampann' }, { minDisc: 40, maxPrice: 100 }) === 'dal' &&
     results({ q: 'tata sampann' }, { minDisc: 45, maxPrice: 100 }) === '');
+  const S = { q: '', tab: 'best', products: new Map() };
+  const store = { prices: {}, hist: {}, minDisc: 30, favs: [], hidden: [], sort: 'disc' };
+  const allowed = () => true, ic = () => '', esc = s => String(s);
+  const ingest = eval('(' + grabFn('ingest') + ')');
+  const filterBar = eval(`(function () {
+    ${resultsFilters}
+    ${grabFn('filterBar')}
+    return filterBar;
+  })()`);
+  const shared = { ...stock[0], cat: 'Grocery › Atta' };
+  const newCount = ingest([shared]) + ingest([{ ...shared, cat: 'Pantry › Flour' }]) + ingest([{ ...shared, cat: 'Pantry › Flour' }]);
+  S.cat = 'Pantry › Flour';
+  check('a duplicate product remains deduped and is discoverable in its second aisle',
+    newCount === 1 && S.products.size === 1 && filterResults(S, store)[0]?.id === shared.id &&
+    filterBar([]).includes('value="Pantry › Flour" selected'));
 
   console.log('== 6. fetchPage with stubbed fetch: cutoff paging, fallback, retry ==');
   const listJob = { kind: 'list', uuid: 'OTg3NjU0MzIxMjM0NTMzNjk=', gid: '16426', g: { name: 'Atta, Rice & Dal (collection)' }, name: 'Atta' };

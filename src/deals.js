@@ -280,7 +280,7 @@
     const worker = async () => { while (queue.length && !ctl.stop) await runJob(queue.shift()); };
     await Promise.all(Array.from({ length: (typeof P !== 'undefined' && P.workers) || 4 }, worker));
     S.scanning = false; S.tried = true;
-    if (S.cat && ![...S.products.values()].some(p => p.cat === S.cat || categoryOf(p) === S.cat)) S.cat = '';
+    if (S.cat && ![...S.products.values()].some(p => aislesOf(p).some(a => aisleMatches(a, S.cat)))) S.cat = '';
     if (S.brand && ![...S.products.values()].some(p => p.brand === S.brand)) S.brand = '';
     recordPrices();
     store.lastScan = Date.now(); save(); render();
@@ -316,7 +316,9 @@
     lowest: ['Lowest tracked price', p => p.lowEver],
     savings: ['Save ₹100+', p => p.save >= 100]
   };
-  const categoryOf = p => p.cat.split(' › ')[0];
+  const aislesOf = p => p.aisles || [p.cat];
+  const categoryOf = aisle => aisle.split(' › ')[0];
+  const aisleMatches = (aisle, selection) => aisle === selection || categoryOf(aisle) === selection;
   // Price history: a few points per product, kept only in this browser.
   store.hist = store.hist || {};
   store.favAt = store.favAt || {};
@@ -353,11 +355,11 @@
       if (store.maxPrice && p.price > store.maxPrice) return;
       if (band && (p.price < band[1] || p.price >= band[2])) return;
       if (S.brand && p.brand !== S.brand) return;
-      if (S.cat && p.cat !== S.cat && categoryOf(p) !== S.cat) return;
+      if (S.cat && !aislesOf(p).some(a => aisleMatches(a, S.cat))) return;
       if (S.unitBase && p.unit?.base !== S.unitBase) return;
       if ((S.favOnly || S.tab === 'saved') && !fav.has(p.id)) return;
       if (signal && !signal[1](p)) return;
-      if (q.length) { const t = (p.title + ' ' + p.brand + ' ' + p.cat).toLowerCase(); if (!q.every(w => t.includes(w))) return; }
+      if (q.length) { const t = (p.title + ' ' + p.brand + ' ' + aislesOf(p).join(' ')).toLowerCase(); if (!q.every(w => t.includes(w))) return; }
       out.push(p);
     });
     return out.sort(SORTS[store.sort][1]);
@@ -688,14 +690,15 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     ];
     return `<div class="check"><h3>Before your first ${capture ? 'capture' : 'scan'}</h3>${S.tried ? scanStatus() : ''}${rows.map(([ok, t, hint]) => `<div class="ck ${ok ? 'ok' : ok === false ? 'no' : 'q'}"><span>${ic(ok ? 'check' : ok === false ? 'x' : 'info', 15)}</span><div><b>${t}</b>${!ok && hint ? `<p>${hint}</p>` : ''}</div></div>`).join('')}<button class="btn" data-act="scan" style="margin-top:16px">${ic('scan')}${capture ? 'Auto-scroll page' : 'Scan deals'}</button></div>`;
   }
-  function card(p, fav, qtyMap) {
+  function card(p, fav, qtyMap, scope = S.cat) {
     const inList = qtyMap[p.id];
+    const aisle = aislesOf(p).find(a => aisleMatches(a, scope)) || p.cat;
     return `<article class="card ${p.inStock ? '' : 'oos'}">
  <div class="im">${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy" decoding="async">` : ic('bag', 28)}
   ${p.disc ? `<span class="dc">${p.disc}% OFF</span>` : ''}
   <button class="fv ${fav ? 'on' : ''}" data-act="fav" data-id="${esc(p.id)}" aria-pressed="${fav}" title="${fav ? 'Saved' : 'Save'}">${ic('heart', 17)}</button></div>
  <div class="inf"><div class="brand">${esc(p.brand)}</div><a class="ti" ${p.url ? `href="${esc(p.url)}" target="_blank" rel="noopener"` : ''}>${esc(p.title)}</a>
-  <div class="ct" title="${esc(p.cat)}">${esc(p.cat.includes(' › ') ? p.cat.split(' › ')[1] : p.cat)}</div>
+  <div class="ct" title="${esc(aisle)}">${esc(aisle.includes(' › ') ? aisle.split(' › ')[1] : aisle)}</div>
   <div class="pr"><b>${$inr(p.price)}</b>${p.mrp > p.price ? `<s>${$inr(p.mrp)}</s>` : ''}</div>
   <div class="sv">${p.save > 0 ? `Save ${$inr(p.save)}` : ''}${p.inStock ? '' : '<i>Out of stock</i>'}</div>
   ${p.unit ? `<div class="up">${unitLabel(p)}</div>` : ''}
@@ -708,19 +711,27 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
     if (!list.length) return '';
     const top = list.slice().sort(byDisc).slice(0, 12), fav = new Set(store.favs);
     const cats = new Map();
-    for (const p of list) { const c = categoryOf(p); if (!cats.has(c)) cats.set(c, []); cats.get(c).push(p); }
+    for (const p of list) {
+      const categories = new Set(aislesOf(p).filter(a => !S.cat || aisleMatches(a, S.cat)).map(categoryOf));
+      for (const c of categories) {
+        if (!cats.has(c)) cats.set(c, []);
+        cats.get(c).push(p);
+      }
+    }
     const rows = [...cats.entries()].map(([c, ps]) => [c, ps.sort(byDisc)]).sort((x, y) => y[1][0].disc - x[1][0].disc);
     return `<section class="sec"><div class="sh"><h3>Biggest discounts right now</h3><span>${list.length} deals from ${cats.size} categories</span></div>
   <div class="grid ${store.view}">${top.map(p => card(p, fav.has(p.id), store.list)).join('')}</div></section>
  ${rows.map(([c, ps]) => `<section class="sec"><div class="sh"><h3>${esc(c)}</h3><button class="more" data-act="seeall" data-id="${esc(c)}">See all ${ps.length}${ic('ext', 13)}</button></div>
-  <div class="hs">${ps.slice(0, 10).map(p => card(p, fav.has(p.id), store.list)).join('')}</div></section>`).join('')}`;
+  <div class="hs">${ps.slice(0, 10).map(p => card(p, fav.has(p.id), store.list, S.cat || c)).join('')}</div></section>`).join('')}`;
   }
   function filterBar(list) {
     const categories = new Map(), brands = new Set();
     for (const p of S.products.values()) {
-      const category = categoryOf(p);
-      if (!categories.has(category)) categories.set(category, new Set());
-      if (p.cat !== category) categories.get(category).add(p.cat);
+      for (const aisle of aislesOf(p)) {
+        const category = categoryOf(aisle);
+        if (!categories.has(category)) categories.set(category, new Set());
+        if (aisle !== category) categories.get(category).add(aisle);
+      }
       if (p.brand) brands.add(p.brand);
     }
     const option = (value, label, selected) => `<option value="${esc(value)}" ${String(value) === String(selected) ? 'selected' : ''}>${esc(label)}</option>`;
@@ -817,7 +828,13 @@ kbd{border:1px solid var(--bd);border-radius:5px;padding:0 5px;font-size:11px;fo
   function ingest(items) {
     let fresh = 0;
     for (const p of items) {
-      if (!allowed(p) || S.products.has(p.id)) continue;
+      if (!allowed(p)) continue;
+      const existing = S.products.get(p.id);
+      if (existing) {
+        if (!existing.aisles.includes(p.cat)) existing.aisles.push(p.cat);
+        continue;
+      }
+      p.aisles = [p.cat];
       const prev = store.prices[p.id];
       p.isNew = prev == null; p.was = prev != null && prev > p.price ? prev : 0;
       p.unit = unitOf(p.title);
